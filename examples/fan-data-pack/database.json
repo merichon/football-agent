@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "id": "sample-pack",
+    "name": "Sample Fan Database",
+    "season": 2026,
+    "currency": "EUR"
+  },
+  "countries": [
+    { "id": "sample-country", "name": "Sampleland" }
+  ],
+  "leagues": [
+    { "id": "sample-league", "countryId": "sample-country", "name": "Sample Premier", "reputation": 70 }
+  ],
+  "clubs": [
+    {
+      "id": "sample-club-a",
+      "leagueId": "sample-league",
+      "name": "North City",
+      "budget": 42000000,
+      "reputation": 72,
+      "need": "ST",
+      "relation": 50
+    },
+    {
+      "id": "sample-club-b",
+      "leagueId": "sample-league",
+      "name": "South United",
+      "budget": 32000000,
+      "reputation": 66,
+      "need": "CM",
+      "relation": 48
+    }
+  ],
+  "players": [
+    {
+      "id": "sample-player-a",
+      "name": "Alex North",
+      "countryId": "sample-country",
+      "clubId": "sample-club-a",
+      "position": "ST",
+      "age": 19,
+      "overall": 68,
+      "potential": 84,
+      "value": 5200000,
+      "wage": 18000,
+      "form": 70,
+      "morale": 65,
+      "represented": true
+    }
+  ]
+}

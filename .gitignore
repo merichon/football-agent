@@ -1,0 +1,27 @@
+node_modules/
+.expo
+.expo/
+.expo/*
+dist/
+web-build/
+tmp/
+.codex-video-frames/
+My project (1)/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+expo-web.*.log
+*.log
+
+# Local secrets and platform credentials. Keep .env.example committed.
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p8
+*.p12
+*service-account*.json
+google-services.json
+GoogleService-Info.plist
+firebase-debug.log*
