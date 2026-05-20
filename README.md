@@ -1,6 +1,6 @@
-# Agent Kariyeri
+# Football Agent
 
-Mobil odaklı futbol ajanlığı simülasyonu. Scout, pazarlık, saygınlık, yaşam faaliyetleri, etkinlik kartları, haftalık simülasyon, offline kayıt ve fan data pack import akışını içerir.
+Mobil odakli futbol ajanligi simulasyonu. Scout, pazarlik, sayginlik, yasam faaliyetleri, etkinlik kartlari, haftalik simulasyon, offline kayit ve fan data pack import akislarini icerir.
 
 ## Kurulum
 
@@ -9,7 +9,7 @@ npm install
 npm run start
 ```
 
-Android veya iOS için Expo ekranındaki yönergeleri izleyin.
+Android, iOS veya web icin Expo ekranindaki yonergeleri izleyin.
 
 ## Test
 
@@ -30,7 +30,7 @@ npm run release:check
 npm audit --audit-level=moderate
 ```
 
-`release:check` runs the engine test, TypeScript check, and GitHub Pages web export. `npm audit` is kept separate because Expo/React Native security fixes can require breaking SDK upgrades.
+`release:check` engine testlerini, TypeScript kontrolunu ve GitHub Pages web export akislarini calistirir. `npm audit` ayri tutulur; Expo/React Native guvenlik guncellemeleri bazen SDK yukseltmesi gerektirebilir.
 
 ## Web Build
 
@@ -40,44 +40,33 @@ Normal web export:
 npm run build:web
 ```
 
-GitHub Pages için export:
+GitHub Pages icin export:
 
 ```bash
 npm run build:web:pages
 ```
 
-`build:web:pages`, Expo export sonrası `dist/` içindeki asset yollarını GitHub Pages repo adreslerinde çalışacak şekilde relative path'e çevirir ve `.nojekyll` dosyası ekler.
+`build:web:pages`, Expo export sonrasi `dist/` icindeki asset yollarini GitHub Pages repo adreslerinde calisacak sekilde relative path'e cevirir ve `.nojekyll` dosyasi ekler.
 
 ## GitHub Pages Deploy
 
-Repo GitHub'a gönderildikten sonra `.github/workflows/deploy-web.yml` otomatik çalışır.
+Repo GitHub'a gonderildikten sonra `.github/workflows/deploy-web.yml` otomatik calisir.
 
-GitHub tarafında:
+GitHub tarafinda:
 
-1. Repository Settings aç.
-2. Pages bölümüne gir.
-3. Source olarak `GitHub Actions` seç.
+1. Repository Settings ac.
+2. Pages bolumune gir.
+3. Source olarak `GitHub Actions` sec.
 4. `main` branch'e push yap.
-5. Actions bittikten sonra Pages URL'i deploy job içinde görünür.
-
-Bu bilgisayarda şu an proje klasörü git repo değilse önce Git kurulu olmalı ve repo başlatılmalı:
-
-```bash
-git init
-git branch -M main
-git add .
-git commit -m "Initial Football Agent web build"
-git remote add origin https://github.com/KULLANICI_ADIN/REPO_ADIN.git
-git push -u origin main
-```
+5. Actions bittikten sonra Pages URL'i deploy job icinde gorunur.
 
 ## Fan Data Pack
 
-Oyun gerçek takım/oyuncu verisi dağıtmaz. Kullanıcılar kendi data pack dosyalarını `.zip` olarak içe aktarabilir.
+Oyun resmi takim, oyuncu, logo veya fotograf verisi dagitmaz. Kullanicilar kendi data pack dosyalarini `.zip` olarak ice aktarabilir.
 
-Zip içinde en az şu dosyalar olmalı:
+Zip icinde en az su dosyalar olmali:
 
 - `manifest.json`
 - `database.json`
 
-Opsiyonel görseller daha sonra `assets/` altında desteklenecek şekilde genişletilebilir.
+Opsiyonel gorseller daha sonra `assets/` altinda desteklenecek sekilde genisletilebilir.
