@@ -935,6 +935,16 @@ function resolveActiveCard(decision) {
 
   function startWeekSimulation() {
     if (!career || simState || career.annualReport) return;
+    if ((career.pendingCards || []).length) {
+      const priorityCards = [...(career.pendingCards || [])].sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
+      setDecisionFlash({
+        title: "Karar bekliyor",
+        summary: "Hafta ilerlemeden önce masadaki kartı kabul veya red ile çözmen gerekiyor.",
+        tone: "decline"
+      });
+      openCardAgenda(priorityCards.slice(0, 3));
+      return;
+    }
     setScreen("match");
     const preview = simulateWeekPreview(career);
     const finalCareer = advanceWeek(career, preview);
@@ -2703,6 +2713,7 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
   const activeFocusLocked = activeFocus.cost > 0 && career.money < activeFocus.cost;
   const storyContinue = buildHomeStoryContinue(career, myPlayers, tr);
   const coachNote = buildHomeCoachNote(career, myPlayers, pendingCards, talents);
+  const advanceLabel = pendingCards.length ? `>> Kartları Çöz (${pendingCards.length})` : simState ? ">> Maç oynanıyor..." : ">> Sonraki Hafta";
   const mission = pendingCards.length
     ? { title: "Karar bekliyor", copy: "Hafta ilerlemeden önce kartları çöz. Her kartta kabul veya red seçmek zorundasın.", target: "agenda", cta: "Kartları Aç" }
     : inDebt
@@ -2866,8 +2877,12 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         Hafta planı: {activeFocusLocked ? `${activeFocus.label} kilitli · kasa yetmezse Denge oynanır` : `${activeFocus.label} · ${activeFocus.hint}`}
       </Text>
       <MotiView from={{ scale: 1 }} animate={{ scale: simState ? 1 : 1.025 }} transition={{ type: "timing", duration: 850, loop: true }}>
-        <TouchableOpacity style={[styles.weekAdvanceButton, simState && styles.weekAdvanceDisabled]} onPress={onNextWeek} disabled={!!simState}>
-          <Text style={styles.weekAdvanceText}>{simState ? ">> Maç oynanıyor..." : ">> Sonraki Hafta"}</Text>
+        <TouchableOpacity
+          style={[styles.weekAdvanceButton, pendingCards.length && styles.weekAdvanceAttention, simState && styles.weekAdvanceDisabled]}
+          onPress={() => pendingCards.length ? openCardAgenda(priorityCards.slice(0, 3)) : onNextWeek()}
+          disabled={!!simState}
+        >
+          <Text style={styles.weekAdvanceText}>{advanceLabel}</Text>
         </TouchableOpacity>
       </MotiView>
     </ImageBackground>
@@ -5766,6 +5781,7 @@ const styles = StyleSheet.create({
   focusHint: { color: "#dff7dc", fontSize: 9, lineHeight: 12, fontWeight: "900", textAlign: "center", marginTop: 4, zIndex: 2 },
   focusHintDanger: { color: "#fecaca" },
   weekAdvanceButton: { backgroundColor: "#041c0c", borderRadius: 7, paddingVertical: 8, alignItems: "center", marginTop: 5, borderWidth: 1, borderColor: "rgba(187,247,208,0.32)", zIndex: 2 },
+  weekAdvanceAttention: { backgroundColor: "#3f2d12", borderColor: "rgba(251,191,36,0.58)" },
   weekAdvanceDisabled: { opacity: 0.58 },
   weekAdvanceText: { color: "#f8fafc", fontSize: 15, fontWeight: "900" },
   weekAdvanceTextDark: { color: "#111827", fontSize: 15, fontWeight: "900" },
