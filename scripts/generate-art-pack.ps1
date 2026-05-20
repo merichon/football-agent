@@ -21,10 +21,10 @@ function C([string]$Hex) {
     )
   }
   return [System.Drawing.Color]::FromArgb(
+    [Convert]::ToInt32($hex.Substring(6, 2), 16),
     [Convert]::ToInt32($hex.Substring(0, 2), 16),
     [Convert]::ToInt32($hex.Substring(2, 2), 16),
-    [Convert]::ToInt32($hex.Substring(4, 2), 16),
-    [Convert]::ToInt32($hex.Substring(6, 2), 16)
+    [Convert]::ToInt32($hex.Substring(4, 2), 16)
   )
 }
 
@@ -80,47 +80,75 @@ function Draw-PixelPortrait([string]$path, [hashtable]$p) {
   $canvas = New-Canvas 256 256
   $bmp = $canvas[0]
   $g = $canvas[1]
+  $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+  $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
   FillRect $g $p.bg 0 0 256 256
-  FillRect $g "#07120d" 0 174 256 82
-  FillRect $g $p.accent 0 0 256 8
-  FillRect $g "#00000055" 18 198 220 34
-  FillEllipse $g "#ffffff18" 24 18 208 208
+  FillRect $g "#020617" 0 176 256 80
+  FillRect $g "#0b1f16" 0 188 256 68
+  FillRect $g $p.accent 0 0 256 7
+  FillRect $g "#ffffff10" 0 7 256 5
+  FillRect $g "#00000066" 18 204 220 34
+  FillEllipse $g "#ffffff18" 20 16 216 216
+  FillEllipse $g "#00000028" 42 52 172 170
 
-  FillRect $g $p.kit 44 156 168 86
-  FillRect $g $p.kit2 110 156 36 86
-  FillRect $g "#07120d" 44 228 168 14
-  FillRect $g $p.accent 68 164 22 10
-  FillRect $g $p.skin 112 136 34 30
-  FillRect $g $p.skin 78 58 100 92
-  FillRect $g $p.shadow 78 132 100 18
-  FillRect $g $p.hair 70 48 116 32
+  FillPoly $g $p.kit @(@(30,242), @(50,166), @(102,150), @(154,150), @(206,166), @(226,242))
+  FillPoly $g $p.kit2 @(@(110,154), @(146,154), @(158,242), @(98,242))
+  FillRect $g "#07120d" 38 232 180 12
+  FillRect $g $p.accent 62 168 24 10
+  FillRect $g "#ffffff33" 168 168 16 8
+  FillRect $g $p.skin 62 90 16 34
+  FillRect $g $p.skin 178 90 16 34
+  FillRect $g $p.shadow 62 114 16 10
+  FillRect $g $p.shadow 178 114 16 10
+  FillEllipse $g $p.skin 69 48 118 112
+  FillRect $g $p.skin 92 118 72 34
+  FillEllipse $g "#ffffff16" 83 62 34 34
+  FillRect $g "#0000001f" 76 128 104 22
+  FillRect $g $p.shadow 82 140 92 12
+  FillRect $g $p.shadow 107 136 42 30
+  FillRect $g $p.skin 109 130 38 34
+  FillRect $g $p.hair 68 48 120 28
 
   switch ($p.hairStyle) {
     1 {
-      FillRect $g $p.hair 62 62 30 56
-      FillRect $g $p.hair 158 62 28 44
+      FillRect $g $p.hair 58 60 28 58
+      FillRect $g $p.hair 166 60 28 48
+      FillRect $g "#ffffff1c" 90 52 46 6
     }
     2 {
-      FillRect $g $p.hair 68 44 78 22
-      FillRect $g $p.hair 74 36 64 16
+      FillRect $g $p.hair 70 42 84 22
+      FillRect $g $p.hair 78 34 70 16
+      FillRect $g $p.hair 148 48 38 18
     }
     3 {
-      FillRect $g $p.hair 72 46 108 18
-      FillRect $g $p.hair 150 60 36 32
+      FillRect $g $p.hair 70 44 112 18
+      FillRect $g $p.hair 148 58 42 34
+      FillRect $g "#ffffff18" 76 47 44 5
     }
     default {
-      FillRect $g $p.hair 78 40 92 20
+      FillRect $g $p.hair 78 38 94 22
+      FillRect $g $p.hair 72 56 110 14
     }
   }
 
-  FillRect $g "#ffffff" 99 96 13 9
-  FillRect $g "#ffffff" 144 96 13 9
-  FillRect $g $p.eye 103 98 6 6
-  FillRect $g $p.eye 148 98 6 6
+  FillRect $g "#00000030" 92 86 28 5
+  FillRect $g "#00000030" 136 86 28 5
+  FillRect $g "#f8fafc" 98 98 15 9
+  FillRect $g "#f8fafc" 144 98 15 9
+  FillRect $g $p.eye 103 100 6 6
+  FillRect $g $p.eye 149 100 6 6
+  FillRect $g "#ffffff" 105 100 2 2
+  FillRect $g "#ffffff" 151 100 2 2
   FillRect $g $p.shadow 126 108 8 24
-  FillRect $g $p.mouth 111 132 36 7
-  FillRect $g "#00000060" 60 242 136 6
-  FillRect $g "#ffffff22" 22 22 6 190
+  FillRect $g "#00000020" 134 122 10 4
+  FillRect $g $p.mouth 109 134 38 6
+  FillRect $g "#ffffff24" 112 134 22 2
+  FillRect $g "#fca5a530" 86 120 18 8
+  FillRect $g "#fca5a530" 154 120 18 8
+  FillRect $g "#00000066" 58 244 140 6
+  FillRect $g "#ffffff24" 22 22 6 190
+  FillRect $g "#ffffff18" 50 170 38 5
+  FillRect $g "#00000033" 178 170 28 8
   Save-Png $bmp $path
   $g.Dispose()
   $bmp.Dispose()

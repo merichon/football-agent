@@ -89,6 +89,18 @@ const storySceneImages = [
   require("./assets/art/story/story-third-league-prospects.png")
 ];
 const portraitLibrary = [
+  require("./assets/art/ai-portraits/agent-portrait-01.png"),
+  require("./assets/art/ai-portraits/agent-portrait-02.png"),
+  require("./assets/art/ai-portraits/agent-portrait-03.png"),
+  require("./assets/art/ai-portraits/agent-portrait-04.png"),
+  require("./assets/art/ai-portraits/agent-portrait-05.png"),
+  require("./assets/art/ai-portraits/agent-portrait-06.png"),
+  require("./assets/art/ai-portraits/agent-portrait-07.png"),
+  require("./assets/art/ai-portraits/agent-portrait-08.png"),
+  require("./assets/art/ai-portraits/agent-portrait-09.png"),
+  require("./assets/art/ai-portraits/agent-portrait-10.png"),
+  require("./assets/art/ai-portraits/agent-portrait-11.png"),
+  require("./assets/art/ai-portraits/agent-portrait-12.png"),
   require("./assets/art/players/portrait-01.png"),
   require("./assets/art/players/portrait-02.png"),
   require("./assets/art/players/portrait-03.png"),
@@ -145,6 +157,47 @@ const clubImages = {
   "liv-docks": require("./assets/clubs/liv-docks.png"),
   "mad-whites": require("./assets/clubs/mad-whites.png"),
   "bar-marina": require("./assets/clubs/bar-marina.png")
+};
+
+const agentAvatarOptions = {
+  skin: [
+    { id: "warm", label: "Buğday", color: "#d8a47f", shadow: "#b36a4c" },
+    { id: "deep", label: "Koyu", color: "#8d5524", shadow: "#6f3f1f" },
+    { id: "light", label: "Açık", color: "#f1c27d", shadow: "#c68662" },
+    { id: "olive", label: "Zeytin", color: "#c68662", shadow: "#8d5524" }
+  ],
+  hair: [
+    { id: "messy", label: "Dağınık", shape: "messy" },
+    { id: "fade", label: "Fade", shape: "fade" },
+    { id: "curly", label: "Kıvırcık", shape: "curly" },
+    { id: "side", label: "Yana", shape: "side" }
+  ],
+  hairColor: [
+    { id: "black", label: "Siyah", color: "#111827" },
+    { id: "brown", label: "Kahve", color: "#5b3218" },
+    { id: "blond", label: "Sarı", color: "#d8b55d" },
+    { id: "copper", label: "Bakır", color: "#9a3412" }
+  ],
+  outfit: [
+    { id: "green", label: "Saha Yeşili", jacket: "#0f6d38", shirt: "#d9f99d" },
+    { id: "navy", label: "Gece Mavisi", jacket: "#1d4ed8", shirt: "#dbeafe" },
+    { id: "black", label: "Siyah Takım", jacket: "#111827", shirt: "#f8fafc" },
+    { id: "wine", label: "Bordo", jacket: "#7f1d1d", shirt: "#fee2e2" }
+  ],
+  accent: [
+    { id: "gold", label: "Altın", color: "#fbbf24" },
+    { id: "blue", label: "Mavi", color: "#7dd3fc" },
+    { id: "green", label: "Mint", color: "#86efac" },
+    { id: "rose", label: "Kriz", color: "#fb7185" }
+  ]
+};
+
+const defaultAgentAvatar = {
+  skin: 0,
+  hair: 0,
+  hairColor: 1,
+  outfit: 0,
+  accent: 0
 };
 
 let playInteractionSound = () => {};
@@ -329,7 +382,7 @@ function createWebGameAudio() {
   };
 }
 
-function MainMenu({ agentName, setAgentName, savedCareer, menuPanel, setMenuPanel, onNewCareer, onContinue, onDeleteSave, soundOn, onToggleSound }) {
+function MainMenu({ agentName, setAgentName, agentAvatar, setAgentAvatar, savedCareer, menuPanel, setMenuPanel, onNewCareer, onContinue, onDeleteSave, soundOn, onToggleSound }) {
   const hasSave = !!savedCareer;
   const represented = savedCareer ? getRepresentedPlayers(savedCareer).length : 0;
   const panels = [
@@ -366,7 +419,7 @@ function MainMenu({ agentName, setAgentName, savedCareer, menuPanel, setMenuPane
             </View>
           </View>
           <MotiView from={{ translateY: 7 }} animate={{ translateY: -5 }} transition={{ type: "timing", duration: 1200, loop: true }}>
-            <PixelFootballer juggling />
+            <AgentAvatarPreview avatar={agentAvatar} size={128} juggling />
           </MotiView>
         </View>
         <View style={styles.menuTabs}>
@@ -383,6 +436,7 @@ function MainMenu({ agentName, setAgentName, savedCareer, menuPanel, setMenuPane
           <AnimatedEdgeLines tone="green" delay={300} />
           <Text style={styles.menuPanelTitle}>Ajans Masası</Text>
           <TextInput value={agentName} onChangeText={setAgentName} placeholder="Ajan Adı" placeholderTextColor="#78917f" style={styles.input} />
+          <AgentCreator avatar={agentAvatar} setAvatar={setAgentAvatar} />
           <View style={styles.menuActionGrid}>
             <TouchableOpacity style={[styles.menuActionButton, !hasSave && styles.disabledButton]} disabled={!hasSave} onPress={onContinue}>
               <LinearGradient colors={hasSave ? ["#fbbf24", "#f97316"] : ["#475569", "#334155"]} style={styles.primaryButton}>
@@ -515,6 +569,134 @@ function PixelFootballer({ juggling = false, kit = "green", badge = "", elite = 
   );
 }
 
+function getAvatarPart(group, avatar = defaultAgentAvatar) {
+  const options = agentAvatarOptions[group] || [];
+  const index = Math.max(0, Math.min(options.length - 1, avatar[group] ?? 0));
+  return options[index] || options[0];
+}
+
+function shiftAvatarPart(avatar, group, direction) {
+  const options = agentAvatarOptions[group] || [];
+  const current = avatar[group] ?? 0;
+  return {
+    ...avatar,
+    [group]: (current + direction + options.length) % options.length
+  };
+}
+
+function AgentAvatarPreview({ avatar = defaultAgentAvatar, size = 128, juggling = false }) {
+  const skin = getAvatarPart("skin", avatar);
+  const hair = getAvatarPart("hair", avatar);
+  const hairColor = getAvatarPart("hairColor", avatar);
+  const outfit = getAvatarPart("outfit", avatar);
+  const accent = getAvatarPart("accent", avatar);
+  const scale = size / 128;
+  const px = (value) => Math.round(value * scale);
+  return (
+    <View style={[styles.agentAvatarStage, { width: px(128), height: px(168) }]}>
+      <View style={[styles.agentAvatarGlow, { width: px(104), height: px(126), borderRadius: px(28), backgroundColor: `${accent.color}33` }]} />
+      <View style={[styles.agentAvatarShadow, { width: px(88), height: px(12), borderRadius: px(8), bottom: px(7) }]} />
+      <View style={[styles.agentAvatarBody, { width: px(86), height: px(144) }]}>
+        <View style={[styles.agentAvatarNeck, { top: px(53), left: px(35), width: px(18), height: px(14), backgroundColor: skin.shadow }]} />
+        <View style={[styles.agentAvatarJacket, { top: px(66), left: px(8), width: px(72), height: px(66), backgroundColor: outfit.jacket, borderColor: accent.color }]} />
+        <View style={[styles.agentAvatarShirt, { top: px(70), left: px(32), width: px(24), height: px(62), backgroundColor: outfit.shirt }]} />
+        <View style={[styles.agentAvatarPocket, { top: px(76), left: px(13), width: px(18), height: px(6), backgroundColor: accent.color }]} />
+        <View style={[styles.agentAvatarHead, { top: px(16), left: px(20), width: px(48), height: px(48), borderRadius: px(12), backgroundColor: skin.color }]}>
+          <View style={[styles.agentAvatarFaceShade, { backgroundColor: skin.shadow }]} />
+          <View style={[styles.agentAvatarEye, { left: px(13), top: px(22), width: px(5), height: px(5) }]} />
+          <View style={[styles.agentAvatarEye, { right: px(13), top: px(22), width: px(5), height: px(5) }]} />
+          <View style={[styles.agentAvatarNose, { top: px(28), left: px(22), width: px(5), height: px(9), backgroundColor: skin.shadow }]} />
+          <View style={[styles.agentAvatarMouth, { top: px(39), left: px(16), width: px(18), height: px(3) }]} />
+        </View>
+        <AvatarHair shape={hair.shape} color={hairColor.color} px={px} />
+        <View style={[styles.agentAvatarLegs, { top: px(130), left: px(22), width: px(44), height: px(12) }]} />
+      </View>
+      {juggling && (
+        <MotiView from={{ translateY: px(4), translateX: 0 }} animate={{ translateY: -px(34), translateX: -px(7) }} transition={{ type: "timing", duration: 560, loop: true }} style={[styles.agentAvatarBall, { width: px(20), height: px(20), borderRadius: px(20), right: px(10), bottom: px(42) }]}>
+          <View style={[styles.agentAvatarBallPatch, { width: px(7), height: px(7), borderRadius: px(2), left: px(6), top: px(6) }]} />
+        </MotiView>
+      )}
+    </View>
+  );
+}
+
+function AvatarHair({ shape, color, px }) {
+  const base = { backgroundColor: color };
+  if (shape === "fade") {
+    return (
+      <>
+        <View style={[styles.agentHairBlock, base, { top: px(9), left: px(20), width: px(48), height: px(14), borderRadius: px(6) }]} />
+        <View style={[styles.agentHairBlock, base, { top: px(18), left: px(17), width: px(10), height: px(28), borderRadius: px(4) }]} />
+      </>
+    );
+  }
+  if (shape === "curly") {
+    return (
+      <>
+        {[0, 1, 2, 3, 4].map((item) => (
+          <View key={item} style={[styles.agentHairBlock, base, { top: px(7 + (item % 2) * 3), left: px(18 + item * 10), width: px(14), height: px(14), borderRadius: px(7) }]} />
+        ))}
+      </>
+    );
+  }
+  if (shape === "side") {
+    return (
+      <>
+        <View style={[styles.agentHairBlock, base, { top: px(7), left: px(18), width: px(54), height: px(16), borderRadius: px(5) }]} />
+        <View style={[styles.agentHairBlock, base, { top: px(17), left: px(50), width: px(18), height: px(26), borderRadius: px(5) }]} />
+      </>
+    );
+  }
+  return (
+    <>
+      <View style={[styles.agentHairBlock, base, { top: px(6), left: px(19), width: px(54), height: px(17), borderRadius: px(5) }]} />
+      <View style={[styles.agentHairBlock, base, { top: px(16), left: px(14), width: px(20), height: px(26), borderRadius: px(5) }]} />
+      <View style={[styles.agentHairBlock, base, { top: px(15), left: px(57), width: px(16), height: px(22), borderRadius: px(5) }]} />
+    </>
+  );
+}
+
+function AgentCreator({ avatar, setAvatar }) {
+  const rows = [
+    ["skin", "Ten"],
+    ["hair", "Saç"],
+    ["hairColor", "Saç Rengi"],
+    ["outfit", "Kıyafet"],
+    ["accent", "Vurgu"]
+  ];
+  return (
+    <View style={styles.agentCreator}>
+      <View style={styles.agentCreatorPreview}>
+        <AgentAvatarPreview avatar={avatar} size={116} />
+        <View style={styles.agentCreatorCopy}>
+          <Text style={styles.agentCreatorTitle}>Menajerini oluştur</Text>
+          <Text style={styles.agentCreatorText}>Seçenekler kayar, karakter anında değişir. Bu görünüm kariyer kaydına yazılır.</Text>
+        </View>
+      </View>
+      <View style={styles.agentCreatorRows}>
+        {rows.map(([group, label]) => {
+          const active = getAvatarPart(group, avatar);
+          return (
+            <View key={group} style={styles.agentOptionRow}>
+              <Text style={styles.agentOptionLabel}>{label}</Text>
+              <TouchableOpacity style={styles.agentOptionArrow} onPress={() => setAvatar(shiftAvatarPart(avatar, group, -1))}>
+                <Text style={styles.agentOptionArrowText}>‹</Text>
+              </TouchableOpacity>
+              <View style={styles.agentOptionValue}>
+                <Text style={styles.agentOptionValueText}>{active.label}</Text>
+                <View style={[styles.agentOptionSwatch, { backgroundColor: active.color || active.jacket || "#94a3b8" }]} />
+              </View>
+              <TouchableOpacity style={styles.agentOptionArrow} onPress={() => setAvatar(shiftAvatarPart(avatar, group, 1))}>
+                <Text style={styles.agentOptionArrowText}>›</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function LoadingCareerScreen({ load }) {
   const progress = Math.max(4, Math.min(100, load.progress || 10));
   return (
@@ -537,6 +719,7 @@ export default function App() {
   const [career, setCareer] = useState(null);
   const [savedCareer, setSavedCareer] = useState(null);
   const [agentName, setAgentName] = useState("Kasey Sung");
+  const [agentAvatar, setAgentAvatar] = useState(defaultAgentAvatar);
   const [menuPanel, setMenuPanel] = useState("play");
   const [bootLoad, setBootLoad] = useState(null);
   const [screen, setScreen] = useState("dashboard");
@@ -566,6 +749,7 @@ export default function App() {
         if (!loaded.career) return;
         const migrated = migrateCareerSave(loaded.career);
         setSavedCareer(migrated);
+        if (migrated.agentAvatar) setAgentAvatar(migrated.agentAvatar);
         if (loaded.migrated) {
           AsyncStorage.setItem(SAVE_KEY, serializeCareerSave(migrated, {
             settings: { soundOn: true, lang: migrated.lang || "tr" },
@@ -804,6 +988,7 @@ export default function App() {
     const next = createInitialCareer(agentName.trim() || "Kasey Sung", db, "tr");
   const freshCareer = {
       ...next,
+      agentAvatar,
       setupComplete: false,
       prologueStep: 0,
       selectedLeagueId: null,
@@ -827,6 +1012,7 @@ export default function App() {
   function continueSavedCareer() {
     if (!savedCareer) return;
     startAudioLoop();
+    if (savedCareer.agentAvatar) setAgentAvatar(savedCareer.agentAvatar);
     setCareer(savedCareer);
     setScreen("dashboard");
   }
@@ -1032,6 +1218,8 @@ function resolveActiveCard(decision) {
         <MainMenu
           agentName={agentName}
           setAgentName={setAgentName}
+          agentAvatar={agentAvatar}
+          setAgentAvatar={setAgentAvatar}
           savedCareer={savedCareer}
           menuPanel={menuPanel}
           setMenuPanel={setMenuPanel}
@@ -2336,7 +2524,7 @@ function AgencyEventBoard({ simState, career, fixtures = [] }) {
       <View style={styles.compactClientGrid}>
         {visibleClients.length ? visibleClients.map(({ player, goals, shots, fouls, inFixture }) => (
           <View key={player.id} style={[styles.compactClientPill, !inFixture && styles.compactClientPillIdle]}>
-            <PlayerPortrait player={player} size={34} />
+            <PlayerPortrait player={player} size={44} />
             <View style={styles.listMain}>
               <Text style={styles.compactClientName} numberOfLines={1}>{player.name}</Text>
               <Text style={styles.compactClientMeta}>{inFixture ? `G ${goals} · Ş ${shots} · F ${fouls}` : "Bu hafta fikstürde değil"}</Text>
@@ -3124,7 +3312,7 @@ function PlayerRow({ career, player, tr, selected, selectedClubId, setSelectedPl
   const pitch = !player.represented ? buildRepresentationPitch(career, player.id) : null;
   const playerDetails = (
     <>
-      <PlayerPortrait player={player} size={54} />
+      <PlayerPortrait player={player} size={64} />
       <View style={styles.listMain}>
         <Text style={styles.cardTitle}>{player.name}</Text>
             <Text style={styles.muted}>
@@ -3202,7 +3390,7 @@ function PlayerRow({ career, player, tr, selected, selectedClubId, setSelectedPl
     <View style={[styles.listCard, styles.playerListCard, selected && styles.selected]}>
       {selected ? (
         <View style={styles.playerCardHeader}>
-          <PlayerPortrait player={player} size={54} />
+          <PlayerPortrait player={player} size={68} />
           <View style={styles.listMain}>
             <Text style={styles.cardTitle}>{player.name}</Text>
             <Text style={styles.muted}>{player.age} • {tr("overall")} {player.overall} • Pot {playerPotentialLabel(player)}</Text>
@@ -4812,7 +5000,7 @@ function ClientMatchWatch({ simState, career, featured }) {
         const lastDecision = events.at(-1)?.agentDecision;
         return (
           <View key={player.id} style={styles.clientWatchRow}>
-            <PlayerPortrait player={player} size={34} />
+            <PlayerPortrait player={player} size={44} />
             <View style={styles.listMain}>
               <Text style={styles.clientWatchName}>{player.name}</Text>
               <Text style={styles.clientWatchMeta}>
@@ -5319,6 +5507,36 @@ const styles = StyleSheet.create({
   saveText: { color: "#cbd5e1", fontSize: 12, lineHeight: 18, fontWeight: "800", marginTop: 4 },
   menuEmpty: { color: "#cbd5e1", backgroundColor: "#0f172a", borderRadius: 8, padding: 12, fontSize: 12, fontWeight: "800" },
   menuSettingLine: { color: "#dbeafe", backgroundColor: "#0f172a", borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 18, fontWeight: "800", marginBottom: 8 },
+  agentCreator: { backgroundColor: "rgba(2,6,23,0.74)", borderColor: "rgba(125,211,252,0.22)", borderWidth: 1, borderRadius: 14, padding: 10, marginBottom: 12, gap: 9 },
+  agentCreatorPreview: { flexDirection: "row", alignItems: "center", gap: 10 },
+  agentCreatorCopy: { flex: 1, minWidth: 0 },
+  agentCreatorTitle: { color: "#f8fafc", fontSize: 14, fontWeight: "900" },
+  agentCreatorText: { color: "#cbd5e1", fontSize: 10, lineHeight: 14, fontWeight: "800", marginTop: 4 },
+  agentCreatorRows: { gap: 6 },
+  agentOptionRow: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 34 },
+  agentOptionLabel: { width: 64, color: "#93c5fd", fontSize: 10, fontWeight: "900" },
+  agentOptionArrow: { width: 31, height: 31, borderRadius: 8, backgroundColor: "#0f172a", borderWidth: 1, borderColor: "rgba(148,163,184,0.28)", alignItems: "center", justifyContent: "center" },
+  agentOptionArrowText: { color: "#f8fafc", fontSize: 21, lineHeight: 23, fontWeight: "900" },
+  agentOptionValue: { flex: 1, minHeight: 31, borderRadius: 8, backgroundColor: "rgba(15,23,42,0.82)", borderWidth: 1, borderColor: "rgba(134,239,172,0.18)", paddingHorizontal: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  agentOptionValueText: { color: "#f8fafc", fontSize: 11, fontWeight: "900" },
+  agentOptionSwatch: { width: 18, height: 18, borderRadius: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.34)" },
+  agentAvatarStage: { alignItems: "center", justifyContent: "flex-end", position: "relative" },
+  agentAvatarGlow: { position: "absolute", bottom: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.14)" },
+  agentAvatarShadow: { position: "absolute", backgroundColor: "rgba(0,0,0,0.34)" },
+  agentAvatarBody: { position: "relative" },
+  agentAvatarNeck: { position: "absolute", zIndex: 1 },
+  agentAvatarJacket: { position: "absolute", borderRadius: 8, borderWidth: 2, overflow: "hidden", zIndex: 2 },
+  agentAvatarShirt: { position: "absolute", zIndex: 3 },
+  agentAvatarPocket: { position: "absolute", zIndex: 4, borderRadius: 2 },
+  agentAvatarHead: { position: "absolute", overflow: "hidden", zIndex: 5, borderWidth: 1, borderColor: "rgba(255,255,255,0.16)" },
+  agentAvatarFaceShade: { position: "absolute", left: 0, right: 0, bottom: 0, height: "28%", opacity: 0.42 },
+  agentAvatarEye: { position: "absolute", backgroundColor: "#020617", borderRadius: 2 },
+  agentAvatarNose: { position: "absolute", opacity: 0.58, borderRadius: 3 },
+  agentAvatarMouth: { position: "absolute", backgroundColor: "#7f1d1d", borderRadius: 2 },
+  agentHairBlock: { position: "absolute", zIndex: 8 },
+  agentAvatarLegs: { position: "absolute", backgroundColor: "#0f172a", borderRadius: 4, zIndex: 1 },
+  agentAvatarBall: { position: "absolute", backgroundColor: "#f8fafc", borderWidth: 2, borderColor: "#111827" },
+  agentAvatarBallPatch: { position: "absolute", backgroundColor: "#111827" },
   pixelStage: { width: 118, height: 176, alignItems: "center", justifyContent: "flex-end", position: "relative" },
   pixelAura: { position: "absolute", bottom: 24, width: 104, height: 130, borderRadius: 28, backgroundColor: "rgba(251,191,36,0.28)", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },
   pixelShadow: { position: "absolute", bottom: 10, width: 86, height: 12, borderRadius: 8, backgroundColor: "rgba(0,0,0,0.32)" },
@@ -5585,7 +5803,7 @@ const styles = StyleSheet.create({
   compactMatchFeed: { width: "100%", maxWidth: 430, alignSelf: "center", backgroundColor: "#101827", borderColor: "rgba(134,239,172,0.20)", borderWidth: 1, borderRadius: 8, padding: 7, gap: 5 },
   compactClientRail: { flexDirection: "row", gap: 6 },
   compactClientGrid: { flexDirection: "row", flexWrap: "wrap", gap: 5 },
-  compactClientPill: { flexGrow: 1, flexBasis: "48%", minHeight: 44, flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#0d2a1d", borderColor: "rgba(134,239,172,0.24)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 4 },
+  compactClientPill: { flexGrow: 1, flexBasis: "48%", minHeight: 54, flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#0d2a1d", borderColor: "rgba(134,239,172,0.24)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 5 },
   compactClientPillIdle: { opacity: 0.72, backgroundColor: "#111827", borderColor: "rgba(148,163,184,0.18)" },
   compactClientName: { color: "#f8fafc", fontSize: 11, lineHeight: 14, fontWeight: "900" },
   compactClientMeta: { color: "#bbf7d0", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 1 },
