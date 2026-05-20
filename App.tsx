@@ -27,7 +27,7 @@ import Svg, { Circle, Polyline } from "react-native-svg";
 import { demoDb, empireUpgrades, lifeActivities, sponsorDeals, staffCandidates } from "./src/game/demoData.js";
 import { readDataPackFromZip } from "./src/game/dataPackSecurity.js";
 import { buildOpenFootballDataPack } from "./src/game/fanData.js";
-import { buildCinematicDeck, buildStorylets } from "./src/game/storylets.js";
+import { buildCinematicDeck, buildStorylets, repoInfluences } from "./src/game/storylets.js";
 import {
   buildContentPackRefs,
   serializeCareerSave,
@@ -2669,16 +2669,10 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
   const inDebt = career.money < 0;
   const talents = (career.db?.players || []).filter((player) => !player.represented && buildRepresentationPitch(career, player.id)?.eligible).length;
   const priorityCards = [...pendingCards].sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
-  const tiles = [
-    { label: "Portföy", value: `${representedCount}/${agencyCapacity}`, icon: "P", target: "players" },
-    { label: "Yetenek", value: talents, icon: "T", target: "scout" },
-    { label: "Gündem", value: pendingCards.length, icon: "N", target: "inbox" },
-    { label: "Ajans", value: career.reputation, icon: "A", target: "empire" }
-  ];
   const utilityTiles = [
     { label: "Kulüpler", target: "clubs" },
-    { label: "İtibar", target: "life" },
-    { label: "Finans", target: "empire" }
+    { label: `Kartlar ${pendingCards.length}`, target: "inbox" },
+    { label: "İtibar", target: "life" }
   ];
   const openTarget = (target) => {
     if (target === "agenda") {
@@ -2708,8 +2702,7 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
   const activeFocus = focusOptions.find((item) => item.id === (career.weeklyFocus || "balanced")) || focusOptions[0];
   const activeFocusLocked = activeFocus.cost > 0 && career.money < activeFocus.cost;
   const storyContinue = buildHomeStoryContinue(career, myPlayers, tr);
-  const deskFeed = buildHomeDeskFeed(career, myPlayers, storyContinue, tr);
-  const signalFeed = deskFeed.slice(0, 2);
+  const coachNote = buildHomeCoachNote(career, myPlayers, pendingCards, talents);
   const mission = pendingCards.length
     ? { title: "Karar bekliyor", copy: "Hafta ilerlemeden önce kartları çöz. Her kartta kabul veya red seçmek zorundasın.", target: "agenda", cta: "Kartları Aç" }
     : inDebt
@@ -2720,6 +2713,12 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         ? { title: "Masada teklif var", copy: "Komisyon, maaş ve kulüp ilişkisini aynı anda tart. Açgözlü hamle uzun vadeyi yakar.", target: "offer", cta: "Pazarlığa Gir" }
         : { title: "Oyuncunu vitrine çıkar", copy: "İlk haftalarda büyük teklif bekleme. Form, güven ve medya görünürlüğü teklif ihtimalini artırır.", target: "players", cta: "Portföyü Yönet" };
   const pressureCopy = `${story.title} · ${story.objective}`;
+  const actionTiles = [
+    { label: "Portföy", value: `${representedCount}/${agencyCapacity}`, icon: "P", target: "players" },
+    { label: "Yetenek", value: talents, icon: "T", target: "scout" },
+    { label: "Teklif", value: career.incomingOffers?.length || 0, icon: "M", target: (career.incomingOffers?.length || 0) ? "offer" : "players" },
+    { label: "Ajans", value: career.reputation, icon: "A", target: "empire" }
+  ];
   return (
     <ImageBackground source={stadiumImage} style={styles.homeBoard} imageStyle={styles.homeBoardImage}>
       <View style={styles.homeShade} />
@@ -2740,17 +2739,9 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         <Text style={styles.homeStoryBadge}>{story.tension || 20}%</Text>
       </View>
 
-      <View style={styles.homeSignalStrip}>
-        {signalFeed.map((item, index) => (
-          <TouchableOpacity
-            key={item.label}
-            style={[styles.homeSignalCard, index === 0 && styles.homeSignalCardWarm]}
-            onPress={() => openTarget(item.target)}
-          >
-            <Text style={styles.homeSignalLabel} numberOfLines={1}>{item.label}</Text>
-            <Text style={styles.homeSignalValue} numberOfLines={2}>{item.value}</Text>
-          </TouchableOpacity>
-        ))}
+      <View style={styles.homeCoachBar}>
+        <Text style={styles.homeCoachKicker}>Ajans Koçu</Text>
+        <Text style={styles.homeCoachText} numberOfLines={2}>{coachNote}</Text>
       </View>
 
       <TouchableOpacity style={styles.homeMissionPanel} onPress={() => openTarget(mission.target)}>
@@ -2771,21 +2762,6 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         </TouchableOpacity>
       )}
 
-      <View style={styles.homeStatusRow}>
-        <TouchableOpacity style={styles.homeStatusPill} onPress={() => openTarget("inbox")}>
-          <Text style={styles.homeStatusValue}>{pendingCards.length}</Text>
-          <Text style={styles.homeStatusLabel}>kart</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.homeStatusPill} onPress={() => openTarget("players")}>
-          <Text style={styles.homeStatusValue}>{career.incomingOffers?.length || 0}</Text>
-          <Text style={styles.homeStatusLabel}>teklif</Text>
-        </TouchableOpacity>
-        <View style={styles.homeStatusPill}>
-          <Text style={styles.homeStatusValue}>{completedAchievements.length || `${career.week}/52`}</Text>
-          <Text style={styles.homeStatusLabel}>{completedAchievements.length ? "başarım" : "sezon"}</Text>
-        </View>
-      </View>
-
       {lastCompletedObjective && (
         <View style={styles.homeAchievementBar}>
           <Text style={styles.homeAchievementKicker}>Son başarı</Text>
@@ -2794,7 +2770,7 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
       )}
 
       <View style={styles.actionGrid}>
-        {tiles.map(({ label, value, icon, target }, index) => (
+        {actionTiles.map(({ label, value, icon, target }, index) => (
           <MotiView
             key={label}
             from={{ opacity: 0, scale: 0.92, translateY: 12 }}
@@ -2968,30 +2944,26 @@ function buildHomeStoryContinue(career, myPlayers = [], translate = (key) => key
   };
 }
 
-function buildHomeDeskFeed(career, myPlayers = [], storyContinue, translate = (key) => key) {
-  const nextCard = [...(career.pendingCards || [])].sort((a, b) => severityRank(b.severity) - severityRank(a.severity))[0];
-  const nextOffer = (career.incomingOffers || [])[0];
-  const offerPlayer = nextOffer ? career.db.players.find((player) => player.id === nextOffer.playerId) : null;
-  const bestTalent = (career.db?.players || [])
-    .filter((player) => !player.represented && buildRepresentationPitch(career, player.id)?.eligible)
-    .sort((a, b) => (b.potential + (b.form || 0)) - (a.potential + (a.form || 0)))[0];
-  const leadPlayer = [...myPlayers].sort((a, b) => (b.agencyTrust || 0) - (a.agencyTrust || 0))[0];
-
-  const hotFile = nextCard
-    ? { label: "Masadaki dosya", value: translate(nextCard.titleKey), target: "agenda" }
-    : nextOffer
-      ? { label: "Masadaki dosya", value: `${offerPlayer?.name || "Oyuncun"} için teklif bekliyor`, target: "offer" }
-      : { label: "Masadaki dosya", value: storyContinue?.title || "Yeni hikaye bekliyor", target: storyContinue?.target || "players" };
-
-  const market = bestTalent
-    ? { label: "Pazar sinyali", value: `${bestTalent.position} · ${bestTalent.age} yaş · pot. ${bestTalent.potential}`, target: "scout" }
-    : { label: "Pazar sinyali", value: "Scout havuzunu tazele, yeni aday çıkar", target: "scout" };
-
-  const trust = leadPlayer
-    ? { label: "Oyuncu nabzı", value: `${leadPlayer.name}: güven ${leadPlayer.agencyTrust ?? 55}`, target: "players" }
-    : { label: "Oyuncu nabzı", value: `Saygınlık ${career.reputation}; ilk temsil düşük komisyon ister`, target: "scout" };
-
-  return [hotFile, market, trust];
+function buildHomeCoachNote(career, myPlayers = [], pendingCards = [], talents = 0) {
+  if (pendingCards.length) {
+    const urgent = pendingCards.some((card) => card.severity === "urgent" || card.severity === "risk");
+    return urgent
+      ? "Önce kartı çöz. Erteleme yok; karar oyuncu güvenini, para akışını veya saygınlığı doğrudan değiştirir."
+      : "Masada kart var. Haftayı başlatmadan önce kabul veya red seç, sonra maç haftasına geç.";
+  }
+  if (!myPlayers.length) {
+    return talents
+      ? "İlk hedef yıldız değil. Alınabilir bir alt lig oyuncusuna düşük komisyonla güven ver."
+      : "Scout havuzunu aç. Saygınlık düşükken oyuncular seni ancak rapor ve doğru vaatle dinler.";
+  }
+  if ((career.incomingOffers || []).length) {
+    return "Teklif masasında kısa para ile uzun kariyer çatışır. Oyuncu güvenini yakmadan komisyonu büyüt.";
+  }
+  const lead = [...myPlayers].sort((a, b) => (b.goalProgress || 0) - (a.goalProgress || 0))[0];
+  if (lead && (lead.marketHeat || 0) < 30) {
+    return `${lead.name} henüz piyasada sıcak değil. Vitrin, PR veya bakım planıyla formu ve güveni büyüt.`;
+  }
+  return "Haftayı planla: Scout daha fazla aday, PR daha fazla saygınlık, bakım oyuncu güveni getirir.";
 }
 
 function advanceHomeStory(career, storyContinue, choice) {
@@ -4545,6 +4517,13 @@ function Settings({ career, tr, setCareer, importDataPack }) {
         <Text style={styles.dataPackText}>Reep ID: {Object.keys(career.db.identityIndex?.byReepId || {}).length} · Provider eşleşmesi: {Object.keys(career.db.identityIndex?.byProvider || {}).length}</Text>
         <Text style={styles.dataPackCode}>Örnek: reep_p / reep_t / reep_l ana kimlik, provider key yan bilgi.</Text>
       </View>
+      <View style={styles.dataPackHelp}>
+        <Text style={styles.dataPackTitle}>Açık Kaynak Esin Defteri</Text>
+        <Text style={styles.dataPackText}>Bu bölüm kod veya lisanslı veri gömmez; sadece güvenli tasarım referanslarını ve oyuna nasıl çevrildiğini gösterir.</Text>
+        {repoInfluences.slice(0, 6).map((source) => (
+          <Text key={source.id} style={styles.dataPackCode}>{source.name}: {source.role}</Text>
+        ))}
+      </View>
       <ProfessionalReadinessPanel report={readiness} />
       <TouchableOpacity style={styles.dangerButton} onPress={() => AsyncStorage.removeItem(SAVE_KEY).then(() => setCareer(null))}>
         <Text style={styles.actionText}>{tr("resetCareer")}</Text>
@@ -5638,6 +5617,9 @@ const styles = StyleSheet.create({
   homeSignalCardWarm: { backgroundColor: "rgba(74,35,27,0.86)", borderColor: "rgba(251,146,60,0.28)" },
   homeSignalLabel: { color: "#fde68a", fontSize: 9, lineHeight: 12, fontWeight: "900" },
   homeSignalValue: { color: "#fff7ed", fontSize: 10, lineHeight: 13, fontWeight: "900", marginTop: 2 },
+  homeCoachBar: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(8,17,29,0.84)", borderColor: "rgba(125,211,252,0.24)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, marginBottom: 6, zIndex: 2 },
+  homeCoachKicker: { color: "#07111f", backgroundColor: "#7dd3fc", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 9, lineHeight: 12, fontWeight: "900" },
+  homeCoachText: { flex: 1, color: "#dbeafe", fontSize: 10, lineHeight: 13, fontWeight: "900" },
   leagueStrip: { flexDirection: "row", gap: 8, marginBottom: 8, zIndex: 2 },
   miniTable: { flex: 1, minHeight: 58, borderRadius: 8, padding: 7, gap: 1, justifyContent: "center", borderWidth: 1, shadowColor: "#000000", shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
   miniTableLeft: { backgroundColor: "rgba(74,35,27,0.86)", borderColor: "rgba(251,146,60,0.28)" },

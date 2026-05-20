@@ -4,22 +4,42 @@ export const repoInfluences = [
   {
     id: "moti",
     name: "nandorojo/moti",
-    role: "Expo uyumlu mikro animasyonlar, giriş/çıkış ve loop hareketleri"
+    role: "Expo uyumlu mikro animasyonlar, giris/cikis ve loop hareketleri"
   },
   {
     id: "rnrc",
     name: "dohooo/react-native-reanimated-carousel",
-    role: "Kart destesi, parallax ve stack carousel davranışı için referans"
+    role: "Kart destesi, parallax ve stack carousel davranisi icin referans"
   },
   {
     id: "inkjs",
     name: "y-lohse/inkjs",
-    role: "Dallanan hikaye mantığı için hafif storylet yaklaşımı"
+    role: "Dallanan hikaye mantigi icin hafif storylet yaklasimi"
   },
   {
     id: "xstate",
     name: "statelyai/xstate",
-    role: "Kariyer durumlarını makine gibi düşünmek için referans"
+    role: "Kariyer durumlarini makine gibi dusunmek icin referans"
+  },
+  {
+    id: "openfootmanager",
+    name: "openfootmanager/openfootmanager",
+    role: "Lig, sezon, finans ve veri paketi ekran akisi icin referans; kod/veri kopyalanmaz"
+  },
+  {
+    id: "agentpitch",
+    name: "gangtao/AgentPitch",
+    role: "Mac ici oyuncu kararlarini olay metnine ceviren yerel agent fikri icin referans"
+  },
+  {
+    id: "magicui",
+    name: "magicuidesign/magicui",
+    role: "Abartisiz premium kart, vurgu cizgisi ve reveal hissi icin gorsel referans"
+  },
+  {
+    id: "openfootball",
+    name: "openfootball/football.json",
+    role: "Public-domain fikstur/data pack mantigi icin referans; fan pack ayri dogrulanir"
   }
 ];
 
