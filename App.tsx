@@ -4028,6 +4028,16 @@ function Life({ career, tr, updateCareer, setDecisionFlash }) {
 
 const reputationActions = [
   {
+    id: "local-credibility",
+    title: "Yerel Güven Turu",
+    description: "Alt lig kulüplerine kendini tanıt; küçük ama gerçek kapı açar.",
+    minReputation: 16,
+    reputationCost: 1,
+    moneyCost: 8000,
+    relationBoost: 1,
+    scoutBoost: 1
+  },
+  {
     id: "club-intro",
     title: "Kulüp Kapısı Aç",
     description: "Saygınlığını kullanıp bir yöneticiyle sıcak giriş al.",
@@ -4069,6 +4079,74 @@ const reputationActions = [
     mediaPower: 1
   }
 ];
+
+function ReputationMilestonePanel({ career }) {
+  const reputation = career.reputation || 0;
+  const represented = getRepresentedPlayers(career).length;
+  const capacity = getAgencyCapacity(career);
+  const nextCapacityRep = Math.min(100, Math.max(reputation + 1, Math.ceil((reputation + 1) / 18) * 18));
+  const currentCommission = 3 + Math.floor(reputation / 28);
+  const nextCommissionRep = Math.min(100, Math.max(reputation + 1, Math.ceil((reputation + 1) / 28) * 28));
+  const milestones = [
+    {
+      id: "capacity",
+      label: "Ajans kapasitesi",
+      value: `${represented}/${capacity}`,
+      next: nextCapacityRep,
+      note: nextCapacityRep >= 100 ? "Üst seviye portföy" : `Yeni slot: Rep ${nextCapacityRep}`
+    },
+    {
+      id: "commission",
+      label: "Komisyon gücü",
+      value: `%${currentCommission}`,
+      next: nextCommissionRep,
+      note: nextCommissionRep >= 100 ? "Elit pazarlık" : `Yeni oran: Rep ${nextCommissionRep}`
+    },
+    {
+      id: "market",
+      label: "Dış pazar",
+      value: reputation >= 28 ? "Açık" : "Kilitli",
+      next: 28,
+      note: reputation >= 28 ? "Yerel dışı adaylar konuşur" : "Rep 28 ile açılır"
+    },
+    {
+      id: "trust",
+      label: "Scout güveni",
+      value: `+${Math.floor(reputation / 6)}`,
+      next: 35,
+      note: reputation >= 35 ? "Rapor riski azaldı" : "Rep 35 raporları netleştirir"
+    }
+  ];
+  return (
+    <View style={styles.reputationMilestonePanel}>
+      <View style={styles.reputationMilestoneTop}>
+        <View style={styles.listMain}>
+          <Text style={styles.reputationMilestoneTitle}>Saygınlık Ne Açıyor?</Text>
+          <Text style={styles.reputationMilestoneCopy}>Her puan; kapasite, komisyon, scout güveni ve pazar erişimini büyütür.</Text>
+        </View>
+        <Text style={styles.reputationMilestoneBadge}>{reputation}</Text>
+      </View>
+      <View style={styles.reputationMilestoneGrid}>
+        {milestones.map((item) => {
+          const progress = Math.min(100, Math.round((reputation / Math.max(1, item.next)) * 100));
+          const unlocked = reputation >= item.next;
+          return (
+            <View key={item.id} style={[styles.reputationMilestoneItem, unlocked && styles.reputationMilestoneItemUnlocked]}>
+              <View style={styles.reputationMilestoneItemTop}>
+                <Text style={styles.reputationMilestoneLabel}>{item.label}</Text>
+                <Text style={styles.reputationMilestoneValue}>{item.value}</Text>
+              </View>
+              <View style={styles.reputationMilestoneTrack}>
+                <View style={[styles.reputationMilestoneFill, { width: `${Math.max(5, progress)}%` }]} />
+              </View>
+              <Text style={styles.reputationMilestoneNote}>{item.note}</Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
 
 function AchievementsPanel({ career }) {
   const achievements = career.achievements?.length ? career.achievements : createAchievements();
@@ -4120,6 +4198,7 @@ function ReputationActionsPanel({ career, updateCareer, setDecisionFlash }) {
       {reputationActions.map((item) => {
         const locked = career.reputation < item.minReputation;
         const poor = career.money < item.moneyCost || career.reputation < item.reputationCost;
+        const usedThisWeek = (career.reputationSpendLog || []).some((log) => log.id === item.id && log.week === career.week);
         return (
           <View key={item.id} style={styles.reputationActionRow}>
             <View style={styles.listMain}>
@@ -4128,8 +4207,12 @@ function ReputationActionsPanel({ career, updateCareer, setDecisionFlash }) {
               <Text style={styles.valueText}>Rep -{item.reputationCost} · {formatMoney(item.moneyCost)} · Kilit {item.minReputation}</Text>
             </View>
             <TouchableOpacity
-              style={[styles.smallButton, (locked || poor) && styles.disabledButton]}
+              style={[styles.smallButton, (locked || poor || usedThisWeek) && styles.disabledButton]}
               onPress={() => {
+                if (usedThisWeek) {
+                  setDecisionFlash?.({ title: "Bu hafta kullanıldı", summary: `${item.title} etkisi bu hafta zaten masada. Haftayı ilerletince tekrar değerlendir.`, tone: "delay" });
+                  return;
+                }
                 if (locked) {
                   setDecisionFlash?.({ title: "Saygınlık yetmiyor", summary: `${item.title} için saygınlık ${item.minReputation} gerekiyor.`, tone: "decline" });
                   return;
@@ -4142,7 +4225,7 @@ function ReputationActionsPanel({ career, updateCareer, setDecisionFlash }) {
                 setDecisionFlash?.({ title: "Saygınlık harcandı", summary: `${item.title} ajansa kalıcı avantaj verdi.`, tone: "accept" });
               }}
             >
-              <Text style={styles.smallButtonText}>{locked ? "Kilitli" : "Kullan"}</Text>
+              <Text style={styles.smallButtonText}>{usedThisWeek ? "Bu Hafta" : locked ? "Kilitli" : "Kullan"}</Text>
             </TouchableOpacity>
           </View>
         );
@@ -4212,6 +4295,8 @@ function Empire({ career, updateCareer, setDecisionFlash }) {
         </View>
         <Text style={styles.ethicsCopy}>Karanlık pazarlık kısa vadede para kazandırır; etik düştükçe medya ve soruşturma kartları çıkar.</Text>
       </View>
+
+      <ReputationMilestonePanel career={career} />
 
       <AchievementsPanel career={career} />
 
@@ -6211,6 +6296,20 @@ const styles = StyleSheet.create({
   achievementBadge: { color: "#111827", backgroundColor: "#fbbf24", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 10, fontWeight: "900", overflow: "hidden" },
   achievementItem: { backgroundColor: "#0f172a", borderColor: "rgba(251,191,36,0.24)", borderWidth: 1, borderRadius: 8, padding: 9, marginTop: 7 },
   achievementFill: { height: "100%", backgroundColor: "#fbbf24" },
+  reputationMilestonePanel: { backgroundColor: "#101827", borderColor: "rgba(125,211,252,0.24)", borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, shadowColor: "#38bdf8", shadowOpacity: 0.1, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
+  reputationMilestoneTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 9 },
+  reputationMilestoneTitle: { color: "#f8fafc", fontSize: 16, fontWeight: "900" },
+  reputationMilestoneCopy: { color: "#b6c6d8", fontSize: 11, lineHeight: 15, fontWeight: "800", marginTop: 2 },
+  reputationMilestoneBadge: { minWidth: 38, textAlign: "center", color: "#06131f", backgroundColor: "#7dd3fc", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, fontSize: 13, fontWeight: "900", overflow: "hidden" },
+  reputationMilestoneGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  reputationMilestoneItem: { width: "48.7%", minHeight: 73, backgroundColor: "#0f172a", borderColor: "rgba(125,211,252,0.16)", borderWidth: 1, borderRadius: 8, padding: 8, justifyContent: "space-between" },
+  reputationMilestoneItemUnlocked: { backgroundColor: "#12351f", borderColor: "rgba(134,239,172,0.28)" },
+  reputationMilestoneItemTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 5 },
+  reputationMilestoneLabel: { color: "#dbeafe", fontSize: 10, lineHeight: 13, fontWeight: "900", flex: 1 },
+  reputationMilestoneValue: { color: "#fbbf24", fontSize: 11, fontWeight: "900" },
+  reputationMilestoneTrack: { height: 6, backgroundColor: "#07120d", borderRadius: 8, overflow: "hidden", marginTop: 6 },
+  reputationMilestoneFill: { height: "100%", backgroundColor: "#38bdf8" },
+  reputationMilestoneNote: { color: "#94a3b8", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 5 },
   reputationPanel: { backgroundColor: "#0d2119", borderColor: "rgba(134,239,172,0.28)", borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, shadowColor: "#22c55e", shadowOpacity: 0.12, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
   reputationBadge: { minWidth: 36, textAlign: "center", color: "#052e16", backgroundColor: "#86efac", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 12, fontWeight: "900", overflow: "hidden" },
   reputationActionRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#0f172a", borderColor: "rgba(134,239,172,0.18)", borderWidth: 1, borderRadius: 8, padding: 9, marginTop: 7 },
