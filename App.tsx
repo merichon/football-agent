@@ -2988,6 +2988,8 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         <FirstClientPlan
           career={career}
           players={myPlayers}
+          updateCareer={updateCareer}
+          setDecisionFlash={setDecisionFlash}
           onOpenPlayer={(playerId) => {
             setSelectedPlayerId?.(playerId);
             setScreen("players");
@@ -3120,7 +3122,7 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
   );
 }
 
-function FirstClientPlan({ career, players = [], onOpenPlayer }) {
+function FirstClientPlan({ career, players = [], onOpenPlayer, updateCareer, setDecisionFlash }) {
   const lead = [...players].sort((a, b) =>
     (b.marketHeat || 0) + (b.agencyTrust || 0) + (b.goalProgress || 0) -
     ((a.marketHeat || 0) + (a.agencyTrust || 0) + (a.goalProgress || 0))
@@ -3135,8 +3137,14 @@ function FirstClientPlan({ career, players = [], onOpenPlayer }) {
     { label: "Vitrin", value: goal, target: 60, tone: goal >= 60 ? "good" : "warn" }
   ];
   const next = steps.find((item) => item.value < item.target) || { label: "Teklif", value: 100, target: 100 };
+  const quickPlans = [
+    { id: "care", label: "Güven", cost: 12000, effect: "+6 güven" },
+    { id: "showcase", label: "Vitrin", cost: 18000, effect: "+18 piyasa" },
+    { id: "training", label: "Gelişim", cost: 14000, effect: "+7 hedef" }
+  ];
+  const planAlreadyRun = lead.planWeek === career.week;
   return (
-    <TouchableOpacity style={styles.clientPlanPanel} onPress={() => onOpenPlayer?.(lead.id)}>
+    <View style={styles.clientPlanPanel}>
       <View style={styles.clientPlanTop}>
         <Text style={styles.clientPlanKicker}>İlk müşteri planı</Text>
         <Text style={styles.clientPlanBadge}>W{career.week}</Text>
@@ -3147,6 +3155,41 @@ function FirstClientPlan({ career, players = [], onOpenPlayer }) {
           <Text style={styles.clientPlanTitle} numberOfLines={1}>{lead.name}</Text>
           <Text style={styles.clientPlanText} numberOfLines={1}>Sıradaki eşik: {next.label}. Oyuncuyu büyütmeden büyük komisyon gelmez.</Text>
         </View>
+      </View>
+      <View style={styles.clientQuickPlanRow}>
+        {quickPlans.map((plan) => {
+          const locked = career.money < plan.cost || planAlreadyRun;
+          const recommended = (next.label === "Güven" && plan.id === "care") || (next.label === "Piyasa" && plan.id === "showcase") || (next.label === "Vitrin" && plan.id === "training");
+          return (
+            <TouchableOpacity
+              key={plan.id}
+              style={[styles.clientQuickPlanButton, recommended && styles.clientQuickPlanRecommended, locked && styles.disabledButton]}
+              onPress={() => {
+                if (planAlreadyRun) {
+                  setDecisionFlash?.({
+                    title: "Bu hafta plan yapıldı",
+                    summary: `${lead.name} için haftalık plan zaten seçildi. Maç haftasını geçirince tekrar karar ver.`,
+                    tone: "delay"
+                  });
+                  return;
+                }
+                const result = runPlayerCareerPlan(career, lead.id, plan.id);
+                updateCareer?.(result.career);
+                setDecisionFlash?.({
+                  title: result.ok ? "Oyuncu planı uygulandı" : "Plan bütçesi yetmedi",
+                  summary: result.ok ? `${lead.name}: ${plan.label} planı başladı. ${plan.effect}.` : `${plan.label} için ${formatMoney(plan.cost)} gerekiyor.`,
+                  tone: result.ok ? "accept" : "decline"
+                });
+              }}
+            >
+              <Text style={styles.clientQuickPlanText}>{plan.label}</Text>
+              <Text style={styles.clientQuickPlanCost}>{planAlreadyRun ? "Bu hafta" : formatMoney(plan.cost)}</Text>
+            </TouchableOpacity>
+          );
+        })}
+        <TouchableOpacity style={styles.clientDetailButton} onPress={() => onOpenPlayer?.(lead.id)}>
+          <Text style={styles.clientDetailText}>Detay</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.clientPlanSteps}>
         {steps.map((step) => {
@@ -3164,7 +3207,7 @@ function FirstClientPlan({ career, players = [], onOpenPlayer }) {
           );
         })}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -6162,6 +6205,13 @@ const styles = StyleSheet.create({
   clientPlanMain: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   clientPlanTitle: { color: "#f8fafc", fontSize: 12, fontWeight: "900" },
   clientPlanText: { color: "#cbd5e1", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 2 },
+  clientQuickPlanRow: { flexDirection: "row", gap: 5, marginTop: 7 },
+  clientQuickPlanButton: { flex: 1, minHeight: 32, backgroundColor: "rgba(15,23,42,0.92)", borderColor: "rgba(125,211,252,0.20)", borderWidth: 1, borderRadius: 7, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
+  clientQuickPlanRecommended: { backgroundColor: "#1f2d12", borderColor: "rgba(251,191,36,0.46)" },
+  clientQuickPlanText: { color: "#f8fafc", fontSize: 9, fontWeight: "900", textAlign: "center" },
+  clientQuickPlanCost: { color: "#94a3b8", fontSize: 8, fontWeight: "900", marginTop: 1, textAlign: "center" },
+  clientDetailButton: { width: 42, minHeight: 32, backgroundColor: "#7dd3fc", borderRadius: 7, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
+  clientDetailText: { color: "#07111f", fontSize: 9, fontWeight: "900", textAlign: "center" },
   clientPlanSteps: { flexDirection: "row", gap: 6, marginTop: 8 },
   clientPlanStep: { flex: 1, minWidth: 0 },
   clientPlanStepTop: { flexDirection: "row", justifyContent: "space-between", gap: 4, alignItems: "center" },
