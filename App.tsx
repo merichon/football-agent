@@ -3551,6 +3551,17 @@ function agentBrainLabel(brain = {}) {
   return `${style}${evolved}`;
 }
 
+function recommendedCareerPlan(player) {
+  const trust = player.agencyTrust ?? 55;
+  const heat = player.marketHeat || 0;
+  const goal = player.goalProgress ?? player.careerGoal?.start ?? 40;
+  if (trust < 58 || (player.happiness ?? player.morale ?? 60) < 48) return "care";
+  if (heat < 32) return "showcase";
+  if (goal < 58) return "training";
+  if ((player.personality === "media" || heat >= 45) && goal < 78) return "pr";
+  return "showcase";
+}
+
 function bestNegotiationClubId(career, player, preferredClubId) {
   const preferred = career.db.clubs.find((club) => club.id === preferredClubId && club.id !== player.clubId && club.budget > (player.value || 0) * 0.5);
   if (preferred) return preferred.id;
@@ -3602,11 +3613,12 @@ function PlayerActionButton({ career, player, tr, selectedClubId, setSelectedPla
   const renewalCost = Math.round(Math.max(25000, player.value * (0.007 + Math.max(0, (player.ego ?? 50) - 45) / 12000)) / 1000) * 1000;
   const renewalUseful = playerPortfolioRisk(player, career.week) >= 25;
   const careerPlans = [
-    { id: "showcase", label: "Vitrin", cost: 18000 },
-    { id: "training", label: "Antrenman", cost: 14000 },
-    { id: "care", label: "Bakım", cost: 12000 },
-    { id: "pr", label: "PR", cost: 22000 }
+    { id: "showcase", label: "Vitrin", cost: 18000, heat: 18, goal: 4, trust: 1, hint: "kulüp ilgisi" },
+    { id: "training", label: "Antrenman", cost: 14000, heat: 6, goal: 7, trust: 2, hint: "gelişim" },
+    { id: "care", label: "Bakım", cost: 12000, heat: 3, goal: 3, trust: 6, hint: "güven" },
+    { id: "pr", label: "PR", cost: 22000, heat: 14, goal: 4, trust: player.personality === "media" ? 3 : 0, hint: "saygınlık" }
   ];
+  const recommendedPlan = recommendedCareerPlan(player);
   const giftPlans = [
     { id: "watch", label: "Saat", cost: 60000 },
     { id: "motorbike", label: "Motor", cost: 107000 },
@@ -3632,16 +3644,20 @@ function PlayerActionButton({ career, player, tr, selectedClubId, setSelectedPla
         ))}
       </View>
       {actionMode === "info" && <View style={styles.careerPlanBox}>
-        <Text style={styles.careerPlanTitle}>Haftalık Plan</Text>
+        <View style={styles.careerPlanHeader}>
+          <Text style={styles.careerPlanTitle}>Haftalık Plan</Text>
+          <Text style={styles.careerPlanAdvice}>Öneri: {careerPlanLabel(recommendedPlan)}</Text>
+        </View>
         <View style={styles.careerPlanRow}>
           {careerPlans.map((plan) => {
             const lockedPlan = career.money < plan.cost;
+            const recommended = plan.id === recommendedPlan;
             return (
               <TouchableOpacity
                 accessibilityRole="button"
                 accessibilityLabel={`Haftalık plan ${plan.label}`}
                 key={plan.id}
-                style={[styles.careerPlanButton, lockedPlan && styles.disabledButton]}
+                style={[styles.careerPlanButton, recommended && styles.careerPlanButtonRecommended, lockedPlan && styles.disabledButton]}
                 disabled={lockedPlan}
                 onPress={() => {
                   const result = runPlayerCareerPlan(career, player.id, plan.id);
@@ -3653,8 +3669,11 @@ function PlayerActionButton({ career, player, tr, selectedClubId, setSelectedPla
                   });
                 }}
               >
+                {recommended && <Text style={styles.careerPlanRecommended}>Önerilen</Text>}
                 <Text style={styles.careerPlanText}>{plan.label}</Text>
+                <Text style={styles.careerPlanImpact}>Piy +{plan.heat} · Hdf +{plan.goal} · Güv +{plan.trust}</Text>
                 <Text style={styles.careerPlanCost}>{formatMoney(plan.cost)}</Text>
+                <Text style={styles.careerPlanHint}>{plan.hint}</Text>
               </TouchableOpacity>
             );
           })}
@@ -6542,6 +6561,7 @@ const styles = StyleSheet.create({
   playerActionModeText: { color: "#cbd5e1", fontSize: 10, fontWeight: "900" },
   playerActionModeTextActive: { color: "#052e16" },
   careerPlanBox: { backgroundColor: "#101827", borderColor: "rgba(125,211,252,0.18)", borderWidth: 1, borderRadius: 8, padding: 7, gap: 6 },
+  careerPlanHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   giftBox: { backgroundColor: "#161f12", borderColor: "rgba(251,191,36,0.22)", borderWidth: 1, borderRadius: 8, padding: 7, gap: 6 },
   talkChoiceBox: { backgroundColor: "rgba(8,17,29,0.88)", borderColor: "rgba(125,211,252,0.24)", borderWidth: 1, borderRadius: 8, padding: 7, gap: 6 },
   talkChoiceHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
@@ -6551,11 +6571,16 @@ const styles = StyleSheet.create({
   talkChoiceText: { color: "#f8fafc", fontSize: 10, fontWeight: "900", textAlign: "center" },
   talkChoiceHint: { color: "#bae6fd", fontSize: 8, lineHeight: 11, fontWeight: "800", textAlign: "center", marginTop: 2 },
   careerPlanTitle: { color: "#7dd3fc", fontSize: 10, fontWeight: "900", textAlign: "center" },
+  careerPlanAdvice: { color: "#07111f", backgroundColor: "#7dd3fc", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 8, fontWeight: "900" },
   careerPlanRow: { flexDirection: "row", flexWrap: "wrap", gap: 5, justifyContent: "center" },
-  careerPlanButton: { minWidth: 68, flexGrow: 1, borderRadius: 7, backgroundColor: "#17233a", borderWidth: 1, borderColor: "rgba(148,163,184,0.2)", paddingHorizontal: 5, paddingVertical: 6, alignItems: "center" },
+  careerPlanButton: { minWidth: 86, flexGrow: 1, flexBasis: "47%", borderRadius: 7, backgroundColor: "#17233a", borderWidth: 1, borderColor: "rgba(148,163,184,0.2)", paddingHorizontal: 5, paddingVertical: 6, alignItems: "center" },
+  careerPlanButtonRecommended: { backgroundColor: "#10251b", borderColor: "rgba(134,239,172,0.42)" },
+  careerPlanRecommended: { color: "#052e16", backgroundColor: "#86efac", borderRadius: 6, overflow: "hidden", paddingHorizontal: 6, paddingVertical: 1, fontSize: 7, fontWeight: "900", marginBottom: 3 },
   giftButton: { minWidth: 82, flexGrow: 1, borderRadius: 7, backgroundColor: "#2a210f", borderWidth: 1, borderColor: "rgba(251,191,36,0.24)", paddingHorizontal: 5, paddingVertical: 6, alignItems: "center" },
   careerPlanText: { color: "#f8fafc", fontSize: 10, fontWeight: "900", textAlign: "center" },
+  careerPlanImpact: { color: "#bbf7d0", fontSize: 8, lineHeight: 11, fontWeight: "800", marginTop: 2, textAlign: "center" },
   careerPlanCost: { color: "#93c5fd", fontSize: 8, fontWeight: "800", marginTop: 1, textAlign: "center" },
+  careerPlanHint: { color: "#94a3b8", fontSize: 8, lineHeight: 11, fontWeight: "800", marginTop: 1, textAlign: "center" },
   smallButton: { backgroundColor: "#334155", borderRadius: 8, paddingVertical: 9, paddingHorizontal: 10, minWidth: 76, alignItems: "center" },
   secondaryButton: { backgroundColor: "#1f2937", borderColor: "#334155", borderWidth: 1 },
   sponsorButton: { backgroundColor: "#0f766e" },
