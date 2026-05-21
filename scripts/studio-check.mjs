@@ -8,7 +8,21 @@ const requiredDocs = [
   "docs/PROFESSIONALIZATION.md",
   "docs/DATA_PACKS_MODS_SECURITY.md",
   "docs/GOOGLE_CLOUD_BACKEND_BLUEPRINT.md",
-  "docs/LIVEOPS_MARKETING_RELEASE.md"
+  "docs/LIVEOPS_MARKETING_RELEASE.md",
+  "docs/ART_DIRECTION.md",
+  "docs/AUDIO_DIRECTION.md",
+  "docs/ASSET_LICENSES.md",
+  "docs/RESEARCH_SOURCES.md"
+];
+
+const requiredAssetDirs = [
+  "assets/art/ui",
+  "assets/art/badges",
+  "assets/art/backgrounds",
+  "assets/art/icons",
+  "assets/audio/music",
+  "assets/audio/sfx",
+  "assets/audio/ambience"
 ];
 
 const forbiddenSecretPatterns = [
@@ -34,6 +48,10 @@ function fail(message) {
 
 for (const doc of requiredDocs) {
   if (!existsSync(doc)) fail(`Missing required studio doc: ${doc}`);
+}
+
+for (const dir of requiredAssetDirs) {
+  if (!existsSync(dir)) fail(`Missing required asset pipeline folder: ${dir}`);
 }
 
 const envExample = existsSync(".env.example") ? readFileSync(".env.example", "utf8") : "";
@@ -70,4 +88,3 @@ run("npm", ["run", "test:all"]);
 run("npx", ["tsc", "--noEmit"]);
 
 console.log("\nStudio check complete. For release candidates, also run npm run build:web:pages and a browser smoke test.");
-
