@@ -2899,11 +2899,6 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
   const inDebt = career.money < 0;
   const talents = (career.db?.players || []).filter((player) => !player.represented && buildRepresentationPitch(career, player.id)?.eligible).length;
   const priorityCards = [...pendingCards].sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
-  const utilityTiles = [
-    { label: "Kulüpler", target: "clubs" },
-    { label: `Kartlar ${pendingCards.length}`, target: "inbox" },
-    { label: "İtibar", target: "life" }
-  ];
   const openTarget = (target) => {
     if (target === "nextWeek") {
       if (!simState && !pendingCards.length) onNextWeek();
@@ -2935,7 +2930,6 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
   ];
   const activeFocus = focusOptions.find((item) => item.id === (career.weeklyFocus || "balanced")) || focusOptions[0];
   const activeFocusLocked = activeFocus.cost > 0 && career.money < activeFocus.cost;
-  const storyContinue = buildHomeStoryContinue(career, myPlayers, tr);
   const coachNote = buildHomeCoachNote(career, myPlayers, pendingCards, talents);
   const leadClient = [...myPlayers].sort((a, b) =>
     (b.marketHeat || 0) + (b.agencyTrust || 0) + (b.goalProgress || 0) -
@@ -2954,12 +2948,17 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         : leadPlanDone
           ? { title: "Plan hazır", copy: `${leadClient.name} için haftalık plan seçildi. Şimdi maç haftasına geç ve sonuçları gör.`, target: "nextWeek", cta: "Haftayı Oynat" }
           : { title: "Oyuncunu vitrine çıkar", copy: "İlk haftalarda büyük teklif bekleme. Form, güven ve medya görünürlüğü teklif ihtimalini artırır.", target: "players", cta: "Portföyü Yönet" };
-  const pressureCopy = `${story.title} · ${story.objective}`;
   const actionTiles = [
     { label: "Portföy", value: `${representedCount}/${agencyCapacity}`, icon: "P", target: "players" },
     { label: "Yetenek", value: talents, icon: "T", target: "scout" },
     { label: "Teklif", value: career.incomingOffers?.length || 0, icon: "M", target: (career.incomingOffers?.length || 0) ? "offer" : "players" },
     { label: "Ajans", value: career.reputation, icon: "A", target: "empire" }
+  ];
+  const navActions = [
+    { label: "Oyuncular", sub: `${representedCount}/${agencyCapacity}`, target: "players" },
+    { label: "Scout", sub: `${talents} aday`, target: "scout" },
+    { label: "Kulüpler", sub: "Pazar", target: "clubs" },
+    { label: "Ajans", sub: `${career.reputation} rep`, target: "empire" }
   ];
   return (
     <ImageBackground source={stadiumImage} style={styles.homeBoard} imageStyle={styles.homeBoardImage}>
@@ -2967,32 +2966,40 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
       <AtmosphereDashes count={10} tone="pitch" />
       <View style={styles.homePitchLine} />
       <View style={styles.homePitchCircle} />
-      <View style={styles.homeTopMini}>
-        <Text style={[styles.homeTopText, inDebt && styles.homeTopTextDanger]}>Para: {formatMoney(career.money)}</Text>
-        <Text style={styles.homeTopText}>{career.agentName}</Text>
-        <Text style={styles.homeTopText}>{career.seasonMonth || "Haziran"} · H{career.week}</Text>
+      <View style={styles.homeCleanTop}>
+        <View style={styles.homeIdentityBlock}>
+          <Text style={styles.homeAgentName} numberOfLines={1}>{career.agentName}</Text>
+          <Text style={styles.homeSeasonLine}>{career.seasonMonth || "Haziran"} · Hafta {career.week} · {career.transferSeason ? "Transfer açık" : "Transfer kapalı"}</Text>
+        </View>
+        <View style={styles.homeWalletBlock}>
+          <Text style={[styles.homeWalletValue, inDebt && styles.homeTopTextDanger]}>{formatMoney(career.money)}</Text>
+          <Text style={styles.homeWalletLabel}>Kasa</Text>
+        </View>
         <TouchableOpacity style={styles.homeSoundPill} onPress={onToggleSound}>
           <Text style={styles.homeSoundText}>{soundOn ? "Ses açık" : "Ses kapalı"}</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.homeStoryLine}>
-        <Text style={styles.homeStoryText} numberOfLines={1}>{pressureCopy}</Text>
-        <Text style={styles.homeStoryBadge}>{story.tension || 20}%</Text>
+      <View style={styles.homeProgressPanel}>
+        <View style={styles.homeProgressTop}>
+          <Text style={styles.homeProgressTitle} numberOfLines={1}>{story.title}</Text>
+          <Text style={styles.homeProgressBadge}>{story.tension || 20}%</Text>
+        </View>
+        <Text style={styles.homeProgressCopy} numberOfLines={2}>{story.objective}</Text>
+        <View style={styles.homeProgressTrack}>
+          <View style={[styles.homeProgressFill, { width: `${Math.max(5, Math.min(100, story.tension || 20))}%` }]} />
+        </View>
       </View>
 
-      <View style={styles.homeCoachBar}>
-        <Text style={styles.homeCoachKicker}>Ajans Koçu</Text>
-        <Text style={styles.homeCoachText} numberOfLines={2}>{coachNote}</Text>
-      </View>
-
-      <TouchableOpacity style={styles.homeMissionPanel} onPress={() => openTarget(mission.target)}>
+      <TouchableOpacity style={[styles.homeMissionPanel, styles.homeMissionPanelClean]} onPress={() => openTarget(mission.target)}>
+        <PremiumSheen delay={120} color="rgba(255,255,255,0.12)" />
         <View style={styles.homeMissionTop}>
           <Text style={styles.homeMissionKicker}>Sıradaki gerçek hamle</Text>
           <Text style={styles.homeMissionCta}>{mission.cta}</Text>
         </View>
         <Text style={styles.homeMissionTitle} numberOfLines={1}>{mission.title}</Text>
-        <Text style={styles.homeMissionCopy} numberOfLines={1}>{mission.copy}</Text>
+        <Text style={styles.homeMissionCopy} numberOfLines={2}>{mission.copy}</Text>
+        <Text style={styles.homeCoachInline} numberOfLines={2}>Koç: {coachNote}</Text>
       </TouchableOpacity>
 
       {myPlayers.length > 0 && (
@@ -3007,6 +3014,16 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
           }}
         />
       )}
+
+      <View style={styles.homeMetricRowClean}>
+        {actionTiles.map(({ label, value, icon, target }) => (
+          <TouchableOpacity key={label} style={styles.homeMetricCardClean} onPress={() => openTarget(target)}>
+            <Text style={styles.homeMetricIcon}>{icon}</Text>
+            <Text style={styles.homeMetricValue} numberOfLines={1}>{value}</Text>
+            <Text style={styles.homeMetricLabel} numberOfLines={1}>{label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {inDebt && (
         <TouchableOpacity style={[styles.cashPressureBar, inDebt && styles.cashPressureBarDebt]} onPress={() => openTarget("empire")}>
@@ -3024,102 +3041,23 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         </View>
       )}
 
-      <View style={styles.actionGrid}>
-        {actionTiles.map(({ label, value, icon, target }, index) => (
-          <MotiView
-            key={label}
-            from={{ opacity: 0, scale: 0.92, translateY: 12 }}
-            animate={{ opacity: 1, scale: 1, translateY: 0 }}
-            transition={{ type: "timing", duration: 260, delay: index * 45 }}
-            style={styles.actionTileMotion}
-          >
-            <TouchableOpacity style={[styles.actionTile, target === "empire" && inDebt && styles.actionTileDanger]} onPress={() => openTarget(target)}>
-              <PremiumSheen delay={index * 180} color="rgba(255,255,255,0.16)" />
-              <View style={styles.homeTileIcon}>
-                <Text style={styles.homeTileIconText}>{icon}</Text>
-              </View>
-              <View style={styles.homeTileText}>
-                <Text style={styles.actionTileValue} numberOfLines={1}>{value}</Text>
-                <Text style={styles.actionTileLabel} numberOfLines={1}>{label}</Text>
-              </View>
-            </TouchableOpacity>
-          </MotiView>
-        ))}
-      </View>
-
-      <View style={styles.homeStoryContinue}>
-        <View style={styles.homeStoryContinueTop}>
-          <Text style={styles.homeStoryContinueKicker}>Hikayeye Devam</Text>
-          <Text style={styles.homeStoryContinueBadge}>{storyContinue.badge}</Text>
-        </View>
-        <Text style={styles.homeStoryContinueTitle} numberOfLines={1}>{storyContinue.title}</Text>
-        <Text style={styles.homeStoryContinueBody} numberOfLines={2}>{storyContinue.body}</Text>
-        <View style={styles.homeStoryChoiceRow}>
-          {storyContinue.choices.map((choice) => (
-            <TouchableOpacity
-              key={choice.id}
-              style={[styles.homeStoryChoice, choice.tone === "gold" && styles.homeStoryChoiceGold]}
-              onPress={() => {
-                const result = advanceHomeStory(career, storyContinue, choice);
-                updateCareer(result.career);
-                setDecisionFlash?.({
-                  title: "Hikaye ilerledi",
-                  summary: result.flash,
-                  tone: "accept"
-                });
-                if (result.offer) {
-                  setSelectedPlayerId?.(result.offer.playerId);
-                  setOffer?.(result.offer);
-                  setScreen("negotiate");
-                  return;
-                }
-                openTarget(result.target);
-              }}
-            >
-              <Text style={styles.homeStoryChoiceText}>{choice.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <View style={styles.homeUtilityRow}>
-        {utilityTiles.map((item) => (
-          <TouchableOpacity key={item.label} style={styles.homeUtilityButton} onPress={() => openTarget(item.target)}>
-            <Text style={styles.homeUtilityText}>{item.label}</Text>
+      <View style={styles.homeNavGridClean}>
+        {navActions.map((item) => (
+          <TouchableOpacity key={item.label} style={styles.homeNavButtonClean} onPress={() => openTarget(item.target)}>
+            <Text style={styles.homeNavLabelClean}>{item.label}</Text>
+            <Text style={styles.homeNavSubClean}>{item.sub}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <View style={styles.focusStrip}>
-        {focusOptions.map((item) => (
-          (() => {
-            const locked = item.cost > 0 && career.money < item.cost;
-            const active = (career.weeklyFocus || "balanced") === item.id;
-            return (
-          <TouchableOpacity
-            key={item.id}
-            style={[styles.focusChip, active && styles.focusChipActive, locked && styles.focusChipLocked]}
-            onPress={() => {
-              if (locked) {
-                setDecisionFlash?.({
-                  title: "Plan bütçesi yetmiyor",
-                  summary: `${item.label} planı için ${formatMoney(item.cost)} gerekir. Denge planı ücretsiz ve güvenli.`,
-                  tone: "decline"
-                });
-                return;
-              }
-              updateCareer({ ...career, weeklyFocus: item.id });
-            }}
-          >
-            <Text style={[styles.focusChipText, active && styles.focusChipTextActive, locked && styles.focusChipTextLocked]}>{item.label}</Text>
-          </TouchableOpacity>
-            );
-          })()
-        ))}
+      <View style={styles.homeFocusCompact}>
+        <Text style={[styles.focusHint, styles.focusHintClean, activeFocusLocked && styles.focusHintDanger]}>
+          Hafta planı: {activeFocusLocked ? `${activeFocus.label} kilitli` : `${activeFocus.label} · ${activeFocus.hint}`}
+        </Text>
+        <TouchableOpacity style={styles.homeMiniAgendaButton} onPress={() => openTarget(pendingCards.length ? "agenda" : "inbox")}>
+          <Text style={styles.homeMiniAgendaText}>Kart {pendingCards.length}</Text>
+        </TouchableOpacity>
       </View>
-      <Text style={[styles.focusHint, activeFocusLocked && styles.focusHintDanger]}>
-        Hafta planı: {activeFocusLocked ? `${activeFocus.label} kilitli · kasa yetmezse Denge oynanır` : `${activeFocus.label} · ${activeFocus.hint}`}
-      </Text>
       <MotiView from={{ scale: 1 }} animate={{ scale: simState ? 1 : 1.025 }} transition={{ type: "timing", duration: 850, loop: true }}>
         <TouchableOpacity
           style={[styles.weekAdvanceButton, pendingCards.length && styles.weekAdvanceAttention, simState && styles.weekAdvanceDisabled]}
@@ -6125,6 +6063,20 @@ const styles = StyleSheet.create({
   homeShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(2,18,10,0.52)" },
   homePitchLine: { position: "absolute", left: "50%", top: 0, bottom: 0, width: 2, marginLeft: -1, backgroundColor: "rgba(226,255,217,0.06)" },
   homePitchCircle: { position: "absolute", left: "50%", top: "64%", width: 154, height: 154, marginLeft: -77, marginTop: -77, borderRadius: 154, borderWidth: 2, borderColor: "rgba(226,255,217,0.06)" },
+  homeCleanTop: { position: "absolute", left: 0, right: 0, top: 0, minHeight: 54, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "rgba(2,25,20,0.96)", borderBottomWidth: 1, borderBottomColor: "rgba(125,211,252,0.18)", flexDirection: "row", alignItems: "center", gap: 8, zIndex: 2 },
+  homeIdentityBlock: { flex: 1, minWidth: 0 },
+  homeAgentName: { color: "#f8fafc", fontSize: 16, lineHeight: 19, fontWeight: "900" },
+  homeSeasonLine: { color: "#9bdcaa", fontSize: 9, lineHeight: 12, fontWeight: "900", marginTop: 1 },
+  homeWalletBlock: { minWidth: 66, minHeight: 36, borderRadius: 8, backgroundColor: "rgba(15,23,42,0.9)", borderColor: "rgba(251,191,36,0.24)", borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 },
+  homeWalletValue: { color: "#fbbf24", fontSize: 11, lineHeight: 14, fontWeight: "900" },
+  homeWalletLabel: { color: "#94a3b8", fontSize: 8, lineHeight: 10, fontWeight: "900" },
+  homeProgressPanel: { backgroundColor: "rgba(8,17,29,0.86)", borderColor: "rgba(125,211,252,0.22)", borderWidth: 1, borderRadius: 8, padding: 9, marginBottom: 7, zIndex: 2 },
+  homeProgressTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  homeProgressTitle: { flex: 1, color: "#f8fafc", fontSize: 12, lineHeight: 15, fontWeight: "900" },
+  homeProgressBadge: { color: "#07111f", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 9, fontWeight: "900" },
+  homeProgressCopy: { color: "#cbd5e1", fontSize: 10, lineHeight: 14, fontWeight: "800", marginTop: 4 },
+  homeProgressTrack: { height: 5, backgroundColor: "#07120d", borderRadius: 8, overflow: "hidden", marginTop: 7 },
+  homeProgressFill: { height: "100%", backgroundColor: "#38bdf8" },
   homeTopMini: { position: "absolute", left: 0, right: 0, top: 0, minHeight: 52, paddingHorizontal: 16, paddingVertical: 7, backgroundColor: "rgba(3,35,26,0.94)", borderBottomWidth: 1, borderBottomColor: "rgba(134,239,172,0.22)", flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignContent: "center", rowGap: 2, zIndex: 2 },
   homeTopText: { width: "23%", color: "#dff7dc", fontSize: 9, lineHeight: 13, fontWeight: "900" },
   homeTopTextDanger: { color: "#fecaca" },
@@ -6211,11 +6163,13 @@ const styles = StyleSheet.create({
   deckDotActive: { backgroundColor: "#fbbf24", width: 16 },
   deckCta: { color: "#07111f", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 9, paddingVertical: 3, fontSize: 10, fontWeight: "900" },
   homeMissionPanel: { backgroundColor: "#07120d", borderColor: "rgba(134,239,172,0.38)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7, marginBottom: 6, zIndex: 2, shadowColor: "#22c55e", shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+  homeMissionPanelClean: { minHeight: 94, backgroundColor: "rgba(7,18,13,0.94)", borderColor: "rgba(134,239,172,0.42)", paddingHorizontal: 11, paddingVertical: 10, marginBottom: 7 },
   homeMissionTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   homeMissionKicker: { color: "#86efac", fontSize: 10, fontWeight: "900" },
   homeMissionCta: { color: "#111827", backgroundColor: "#bbf7d0", borderRadius: 7, overflow: "hidden", paddingHorizontal: 8, paddingVertical: 3, fontSize: 10, fontWeight: "900" },
   homeMissionTitle: { color: "#ffffff", fontSize: 13, lineHeight: 17, fontWeight: "900", marginTop: 3 },
   homeMissionCopy: { color: "#dbeafe", fontSize: 9, lineHeight: 13, fontWeight: "800", marginTop: 2 },
+  homeCoachInline: { color: "#9bdcaa", fontSize: 9, lineHeight: 12, fontWeight: "900", marginTop: 7 },
   clientPlanPanel: { backgroundColor: "rgba(16,24,39,0.92)", borderColor: "rgba(125,211,252,0.30)", borderWidth: 1, borderRadius: 8, padding: 8, marginBottom: 6, zIndex: 2, shadowColor: "#38bdf8", shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
   clientPlanTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   clientPlanKicker: { color: "#7dd3fc", fontSize: 9, fontWeight: "900" },
@@ -6241,6 +6195,19 @@ const styles = StyleSheet.create({
   clientPlanTrack: { height: 5, backgroundColor: "#07120d", borderRadius: 8, overflow: "hidden", marginTop: 3 },
   clientPlanFill: { height: "100%", backgroundColor: "#fbbf24" },
   clientPlanFillGood: { backgroundColor: "#22c55e" },
+  homeMetricRowClean: { flexDirection: "row", gap: 5, marginBottom: 6, zIndex: 2 },
+  homeMetricCardClean: { flex: 1, minHeight: 48, borderRadius: 8, backgroundColor: "rgba(15,23,42,0.86)", borderColor: "rgba(125,211,252,0.16)", borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
+  homeMetricIcon: { color: "#7dd3fc", fontSize: 9, lineHeight: 11, fontWeight: "900" },
+  homeMetricValue: { color: "#f8fafc", fontSize: 12, lineHeight: 15, fontWeight: "900", marginTop: 1, textAlign: "center" },
+  homeMetricLabel: { color: "#9bdcaa", fontSize: 8, lineHeight: 10, fontWeight: "900", marginTop: 1, textAlign: "center" },
+  homeNavGridClean: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 2, marginBottom: 6, zIndex: 2 },
+  homeNavButtonClean: { width: "48.8%", minHeight: 38, borderRadius: 8, backgroundColor: "rgba(226,232,240,0.94)", borderColor: "rgba(15,23,42,0.18)", borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 },
+  homeNavLabelClean: { color: "#0f172a", fontSize: 11, lineHeight: 14, fontWeight: "900", textAlign: "center" },
+  homeNavSubClean: { color: "#334155", fontSize: 8, lineHeight: 10, fontWeight: "900", marginTop: 1, textAlign: "center" },
+  homeFocusCompact: { flexDirection: "row", alignItems: "center", gap: 6, zIndex: 2, marginBottom: 5 },
+  focusHintClean: { flex: 1, marginTop: 0, textAlign: "left", backgroundColor: "rgba(15,23,42,0.70)", borderColor: "rgba(125,211,252,0.16)", borderWidth: 1, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 5 },
+  homeMiniAgendaButton: { minWidth: 62, minHeight: 26, borderRadius: 7, backgroundColor: "#fbbf24", alignItems: "center", justifyContent: "center", paddingHorizontal: 7 },
+  homeMiniAgendaText: { color: "#111827", fontSize: 10, fontWeight: "900" },
   cashPressureBar: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#152616", borderColor: "rgba(251,191,36,0.32)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7, marginBottom: 8, zIndex: 2 },
   cashPressureBarDebt: { backgroundColor: "#2a1111", borderColor: "rgba(248,113,113,0.45)" },
   cashPressureKicker: { color: "#111827", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 9, fontWeight: "900" },
@@ -6424,8 +6391,8 @@ const styles = StyleSheet.create({
   cardModal: { position: "relative", overflow: "hidden", backgroundColor: "#172033", borderColor: "#475569", borderWidth: 1, borderRadius: 8, padding: 16, shadowColor: "#000000", shadowOpacity: 0.34, shadowRadius: 18, shadowOffset: { width: 0, height: 10 } },
   modalShine: { position: "absolute", right: -42, top: -46, width: 160, height: 160, borderRadius: 160, backgroundColor: "rgba(251,191,36,0.10)" },
   modalTopLine: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
-  cardArtworkBanner: { height: 104, borderRadius: 8, overflow: "hidden", justifyContent: "flex-end", marginBottom: 12, borderWidth: 1, borderColor: "rgba(251,191,36,0.20)" },
-  cardArtworkImage: { borderRadius: 8, resizeMode: "cover" },
+  cardArtworkBanner: { height: 104, borderRadius: 8, overflow: "hidden", justifyContent: "flex-end", marginBottom: 12, borderWidth: 1, borderColor: "rgba(251,191,36,0.20)", backgroundColor: "#07120d" },
+  cardArtworkImage: { borderRadius: 8, resizeMode: "contain" },
   cardArtworkShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(2,6,23,0.22)" },
   cardArtworkLabel: { alignSelf: "flex-start", margin: 8, color: "#111827", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 8, paddingVertical: 3, fontSize: 10, fontWeight: "900" },
   modalKicker: { color: "#fbbf24", fontSize: 12, fontWeight: "900" },
