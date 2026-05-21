@@ -18,6 +18,7 @@
     "test:save": "node tests/saveSystem.test.mjs",
     "test:smoke": "node tests/careerSmoke.test.mjs",
     "test:all": "npm run test:engine && npm run test:platform && npm run test:datapack && npm run test:save && npm run test:smoke",
+    "studio:check": "node scripts/studio-check.mjs",
     "release:check": "node scripts/release-check.mjs"
   },
   "dependencies": {
