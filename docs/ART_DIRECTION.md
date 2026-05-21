@@ -57,3 +57,23 @@ Blocked motifs:
 - New art should go under `assets/art/ui`, `assets/art/badges`, `assets/art/backgrounds`, or `assets/art/icons`.
 - Existing legacy folders can be migrated later, but new work should follow the pipeline structure.
 - Every external or generated asset must be logged in `docs/ASSET_LICENSES.md` before shipping.
+
+## AI Prompt Direction
+
+Prompt libraries can be used as moodboard and structure references, not as shippable assets. Rewrite every prompt into Football Agent's own fictional identity.
+
+Good Football Agent prompt targets:
+
+- Fictional club badge sheets with original symbols and colors.
+- Generic agent office backgrounds with dark premium football agency mood.
+- Transfer offer reveal illustrations for cards and modals.
+- Scout report visuals with charts, notebooks, floodlights, and training pitch mood.
+- Store capsule/key art showing the agent career fantasy without real clubs or players.
+- Social promo visuals for fictional negotiations, contracts, and rising prospects.
+
+Prompt safety rules:
+
+- Do not ask for real club logos, real player faces, official kits, league marks, sponsors, or celebrity likeness.
+- Do not ask for "in the style of" a living artist, branded franchise, or official football broadcast.
+- Keep generated text minimal; UI text should be rendered by the app where possible.
+- Track each generated output in `docs/ASSET_LICENSES.md` before it becomes a shippable asset.

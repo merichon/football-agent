@@ -5,6 +5,7 @@ This document records research references for Football Agent art, audio, marketi
 ## Primary Map
 
 - [FronkonGames/Awesome-Gamedev](https://github.com/FronkonGames/Awesome-Gamedev): broad gamedev resource index used as a research map, not a code or asset dependency. Selected sections below are relevant to Football Agent.
+- [YouMind-OpenLab/awesome-gpt-image-2](https://github.com/YouMind-OpenLab/awesome-gpt-image-2): AI image prompt library used as prompt/moodboard inspiration only, not as an asset source. The repository is CC BY 4.0, so copied or adapted prompt material requires attribution. Generated images also depend on the image model/provider terms.
 
 ## Selected Awesome-Gamedev Sections
 
@@ -26,3 +27,23 @@ This document records research references for Football Agent art, audio, marketi
 - Do not make old or license-unclear links primary recommendations.
 - For visual/audio inspiration, document the principle being adopted, not the source asset.
 - Before release, use `football-agent-release-check` to confirm asset licenses, store claims, screenshots, trailer footage, and privacy disclosures.
+
+## AI Visual Prompt Reference
+
+`YouMind-OpenLab/awesome-gpt-image-2` can help shape Football Agent prompt language for:
+
+- Fictional club badge prompts.
+- Generic agent office backgrounds.
+- Transfer offer reveal illustrations.
+- Scout report visuals.
+- Store capsule/key art direction.
+- Social media promo visual prompts.
+- UI moodboard prompts.
+
+Rules for this source:
+
+- Do not ship preview images or copied prompt text as project-owned assets.
+- Rewrite prompt ideas into Football Agent's original fictional world.
+- Avoid real club logos, real player faces, official kits, sponsors, league marks, celebrity likenesses, and protected brand/style references.
+- If any prompt wording is copied or closely adapted, record CC BY 4.0 attribution in `docs/ASSET_LICENSES.md`.
+- Treat every generated output as a new asset that still needs model/provider rights review before shipping.

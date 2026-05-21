@@ -9,6 +9,7 @@ This file tracks every shippable external, generated, or commissioned art/audio 
 - Record the license page or source terms at the time the asset is added.
 - If attribution is required, add it to the credits/store/legal surface before release.
 - Treat fan data pack media as untrusted until validated.
+- Prompt libraries such as `YouMind-OpenLab/awesome-gpt-image-2` may require attribution for copied/adapted prompt text. Generated image rights still depend on the image model/provider terms and must be checked separately.
 
 ## License Register
 
@@ -27,3 +28,9 @@ This file tracks every shippable external, generated, or commissioned art/audio 
 ## Existing Asset Audit Backlog
 
 The current repository already contains prototype art under `assets/art`, `assets/backgrounds`, `assets/clubs`, and `assets/players`. Before a store or public monetized release, audit each existing file into the table above or remove it from the shippable bundle.
+
+## Research And Prompt Attribution Notes
+
+| Source | Use | License/Terms Note | Required Action |
+| --- | --- | --- | --- |
+| YouMind-OpenLab/awesome-gpt-image-2 | AI visual prompt inspiration and moodboard structure only | CC BY 4.0, attribution required if prompt material is reused/adapted | Prefer rewriting from scratch; if wording is reused, credit source and record it here. |
