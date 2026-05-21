@@ -2967,6 +2967,17 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         <Text style={styles.homeMissionCopy} numberOfLines={1}>{mission.copy}</Text>
       </TouchableOpacity>
 
+      {myPlayers.length > 0 && (
+        <FirstClientPlan
+          career={career}
+          players={myPlayers}
+          onOpenPlayer={(playerId) => {
+            setSelectedPlayerId?.(playerId);
+            setScreen("players");
+          }}
+        />
+      )}
+
       {inDebt && (
         <TouchableOpacity style={[styles.cashPressureBar, inDebt && styles.cashPressureBarDebt]} onPress={() => openTarget("empire")}>
           <Text style={styles.cashPressureKicker}>{inDebt ? "Kasa alarmı" : "Kasa zayıf"}</Text>
@@ -3089,6 +3100,54 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         </TouchableOpacity>
       </MotiView>
     </ImageBackground>
+  );
+}
+
+function FirstClientPlan({ career, players = [], onOpenPlayer }) {
+  const lead = [...players].sort((a, b) =>
+    (b.marketHeat || 0) + (b.agencyTrust || 0) + (b.goalProgress || 0) -
+    ((a.marketHeat || 0) + (a.agencyTrust || 0) + (a.goalProgress || 0))
+  )[0];
+  if (!lead) return null;
+  const trust = lead.agencyTrust ?? 55;
+  const heat = lead.marketHeat || 0;
+  const goal = lead.goalProgress || Math.round(((lead.seasonStats?.goals || 0) * 12) + ((lead.seasonStats?.highlights || 0) * 8));
+  const steps = [
+    { label: "Güven", value: trust, target: 70, tone: trust >= 70 ? "good" : "warn" },
+    { label: "Piyasa", value: heat, target: 45, tone: heat >= 45 ? "good" : "warn" },
+    { label: "Vitrin", value: goal, target: 60, tone: goal >= 60 ? "good" : "warn" }
+  ];
+  const next = steps.find((item) => item.value < item.target) || { label: "Teklif", value: 100, target: 100 };
+  return (
+    <TouchableOpacity style={styles.clientPlanPanel} onPress={() => onOpenPlayer?.(lead.id)}>
+      <View style={styles.clientPlanTop}>
+        <Text style={styles.clientPlanKicker}>İlk müşteri planı</Text>
+        <Text style={styles.clientPlanBadge}>W{career.week}</Text>
+      </View>
+      <View style={styles.clientPlanMain}>
+        <PlayerPortrait player={lead} size={42} />
+        <View style={styles.listMain}>
+          <Text style={styles.clientPlanTitle} numberOfLines={1}>{lead.name}</Text>
+          <Text style={styles.clientPlanText} numberOfLines={1}>Sıradaki eşik: {next.label}. Oyuncuyu büyütmeden büyük komisyon gelmez.</Text>
+        </View>
+      </View>
+      <View style={styles.clientPlanSteps}>
+        {steps.map((step) => {
+          const width = `${Math.max(6, Math.min(100, Math.round((step.value / step.target) * 100)))}%`;
+          return (
+            <View key={step.label} style={styles.clientPlanStep}>
+              <View style={styles.clientPlanStepTop}>
+                <Text style={styles.clientPlanStepLabel}>{step.label}</Text>
+                <Text style={[styles.clientPlanStepValue, step.tone === "good" && styles.clientPlanStepValueGood]}>{step.value}/{step.target}</Text>
+              </View>
+              <View style={styles.clientPlanTrack}>
+                <View style={[styles.clientPlanFill, step.tone === "good" && styles.clientPlanFillGood, { width }]} />
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -3236,6 +3295,22 @@ function advanceHomeStory(career, storyContinue, choice) {
     target: storyContinue.target,
     offer: storyContinue.kind === "offer" ? storyContinue.offer : null,
     flash: `${choice.label}: ${nextObjective}`
+  };
+}
+
+function representationApproachPreview(pitch, approachId) {
+  const profiles = {
+    career: { chance: 7, fee: 1.05, trust: "+güven", commission: "-%1 kom.", risk: "düşük" },
+    money: { chance: 12, fee: 1.35, trust: "-güven", commission: "aynı kom.", risk: "orta" },
+    commission: { chance: -5, fee: 0.92, trust: "-güven", commission: "+%1 kom.", risk: "yüksek" }
+  };
+  const profile = profiles[approachId] || { chance: 0, fee: 1, trust: "denge", commission: "aynı kom.", risk: "düşük" };
+  return {
+    chance: Math.max(2, Math.min(88, (pitch?.chance || 0) + profile.chance)),
+    signingFee: Math.round(((pitch?.signingFee || 0) * profile.fee) / 1000) * 1000,
+    trust: profile.trust,
+    commission: profile.commission,
+    risk: profile.risk
   };
 }
 
@@ -3760,9 +3835,9 @@ function Clubs({ career, tr, selectedClubId, setSelectedClubId }) {
 
 function Scout({ career, tr, updateCareer, setDecisionFlash }) {
   const approachOptions = [
-    { id: "career", label: "Kariyer", hint: "+güven" },
-    { id: "money", label: "Para", hint: "+şans" },
-    { id: "commission", label: "Komisyon", hint: "+oran" }
+    { id: "career", label: "Kariyer", hint: "güvenli başlangıç" },
+    { id: "money", label: "Para", hint: "daha pahalı ikna" },
+    { id: "commission", label: "Komisyon", hint: "riskli oran" }
   ];
   const signable = career.db.players
     .filter((player) => !player.represented)
@@ -3781,6 +3856,7 @@ function Scout({ career, tr, updateCareer, setDecisionFlash }) {
           </View>
           <Text style={styles.scoutPanelBadge}>{signable.length}</Text>
         </View>
+        <Text style={styles.scoutPanelExplain}>Başlangıçta ajans kapasitesi {getRepresentedPlayers(career).length}/{getAgencyCapacity(career)}. Her oyuncu gelmez; saygınlık düşükken sadece radarındaki düşük profilli adaylar masaya oturur.</Text>
         {signable.length ? signable.map(({ player, pitch }) => (
           <View key={player.id} style={styles.scoutCandidateCard}>
             <View style={styles.scoutCandidateRow}>
@@ -3792,24 +3868,29 @@ function Scout({ career, tr, updateCareer, setDecisionFlash }) {
               </View>
             </View>
             <View style={styles.pitchChoiceRow}>
-              {approachOptions.map((option) => (
-                <TouchableOpacity
-                  key={`${player.id}-${option.id}`}
-                  style={styles.pitchChoiceButton}
-                  onPress={() => {
-                    const result = signPlayerToAgency(career, player.id, option.id);
-                    updateCareer(result.career);
-                    setDecisionFlash?.({
-                      title: result.ok ? "Temsil imzalandı" : "Oyuncu reddetti",
-                      summary: result.ok ? `${player.name} ajansa katıldı. Yaklaşım: ${option.label}.` : `${player.name} beklemeyi seçti. Yaklaşım: ${option.label}.`,
-                      tone: result.ok ? "accept" : "decline"
-                    });
-                  }}
-                >
-                  <Text style={styles.pitchChoiceText}>{option.label}</Text>
-                  <Text style={styles.pitchChoiceHint}>{option.hint}</Text>
-                </TouchableOpacity>
-              ))}
+              {approachOptions.map((option) => {
+                const preview = representationApproachPreview(pitch, option.id);
+                return (
+                  <TouchableOpacity
+                    key={`${player.id}-${option.id}`}
+                    style={[styles.pitchChoiceButton, option.id === "commission" && styles.pitchChoiceRisk]}
+                    onPress={() => {
+                      const result = signPlayerToAgency(career, player.id, option.id);
+                      updateCareer(result.career);
+                      setDecisionFlash?.({
+                        title: result.ok ? "Temsil imzalandı" : "Oyuncu reddetti",
+                        summary: result.ok ? `${player.name} ajansa katıldı. Yaklaşım: ${option.label}.` : `${player.name} beklemeyi seçti. Yaklaşım: ${option.label}.`,
+                        tone: result.ok ? "accept" : "decline"
+                      });
+                    }}
+                  >
+                    <Text style={styles.pitchChoiceText}>{option.label}</Text>
+                    <Text style={styles.pitchChoiceChance}>%{preview.chance}</Text>
+                    <Text style={styles.pitchChoiceHint}>{formatMoney(preview.signingFee)} · {preview.trust}</Text>
+                    <Text style={styles.pitchChoiceFine}>{preview.commission} · risk {preview.risk}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         )) : (
@@ -5949,6 +6030,22 @@ const styles = StyleSheet.create({
   homeMissionCta: { color: "#111827", backgroundColor: "#bbf7d0", borderRadius: 7, overflow: "hidden", paddingHorizontal: 8, paddingVertical: 3, fontSize: 10, fontWeight: "900" },
   homeMissionTitle: { color: "#ffffff", fontSize: 13, lineHeight: 17, fontWeight: "900", marginTop: 3 },
   homeMissionCopy: { color: "#dbeafe", fontSize: 9, lineHeight: 13, fontWeight: "800", marginTop: 2 },
+  clientPlanPanel: { backgroundColor: "rgba(16,24,39,0.92)", borderColor: "rgba(125,211,252,0.30)", borderWidth: 1, borderRadius: 8, padding: 8, marginBottom: 6, zIndex: 2, shadowColor: "#38bdf8", shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+  clientPlanTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  clientPlanKicker: { color: "#7dd3fc", fontSize: 9, fontWeight: "900" },
+  clientPlanBadge: { color: "#07111f", backgroundColor: "#7dd3fc", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 9, fontWeight: "900" },
+  clientPlanMain: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+  clientPlanTitle: { color: "#f8fafc", fontSize: 12, fontWeight: "900" },
+  clientPlanText: { color: "#cbd5e1", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 2 },
+  clientPlanSteps: { flexDirection: "row", gap: 6, marginTop: 8 },
+  clientPlanStep: { flex: 1, minWidth: 0 },
+  clientPlanStepTop: { flexDirection: "row", justifyContent: "space-between", gap: 4, alignItems: "center" },
+  clientPlanStepLabel: { color: "#dbeafe", fontSize: 8, fontWeight: "900" },
+  clientPlanStepValue: { color: "#fbbf24", fontSize: 8, fontWeight: "900" },
+  clientPlanStepValueGood: { color: "#86efac" },
+  clientPlanTrack: { height: 5, backgroundColor: "#07120d", borderRadius: 8, overflow: "hidden", marginTop: 3 },
+  clientPlanFill: { height: "100%", backgroundColor: "#fbbf24" },
+  clientPlanFillGood: { backgroundColor: "#22c55e" },
   cashPressureBar: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#152616", borderColor: "rgba(251,191,36,0.32)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7, marginBottom: 8, zIndex: 2 },
   cashPressureBarDebt: { backgroundColor: "#2a1111", borderColor: "rgba(248,113,113,0.45)" },
   cashPressureKicker: { color: "#111827", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 9, fontWeight: "900" },
@@ -6348,12 +6445,16 @@ const styles = StyleSheet.create({
   scoutPanelHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   scoutPanelTitle: { color: "#f8fafc", fontSize: 13, fontWeight: "900" },
   scoutPanelBadge: { color: "#052e16", backgroundColor: "#7dd3fc", borderRadius: 7, overflow: "hidden", paddingHorizontal: 8, paddingVertical: 3, fontSize: 10, fontWeight: "900" },
+  scoutPanelExplain: { color: "#bae6fd", fontSize: 10, lineHeight: 14, fontWeight: "800", backgroundColor: "rgba(15,23,42,0.72)", borderColor: "rgba(125,211,252,0.14)", borderWidth: 1, borderRadius: 8, padding: 8 },
   scoutCandidateCard: { backgroundColor: "#0f172a", borderColor: "rgba(148,163,184,0.18)", borderWidth: 1, borderRadius: 8, padding: 8, gap: 8 },
   scoutCandidateRow: { flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: "#0f172a", borderColor: "rgba(148,163,184,0.18)", borderWidth: 1, borderRadius: 8, padding: 8 },
   pitchChoiceRow: { flexDirection: "row", gap: 7 },
-  pitchChoiceButton: { flex: 1, minHeight: 48, borderRadius: 8, backgroundColor: "#10251b", borderWidth: 1, borderColor: "rgba(134,239,172,0.28)", alignItems: "center", justifyContent: "center", paddingHorizontal: 5, paddingVertical: 6 },
+  pitchChoiceButton: { flex: 1, minHeight: 74, borderRadius: 8, backgroundColor: "#10251b", borderWidth: 1, borderColor: "rgba(134,239,172,0.28)", alignItems: "center", justifyContent: "center", paddingHorizontal: 5, paddingVertical: 6 },
+  pitchChoiceRisk: { backgroundColor: "#261f12", borderColor: "rgba(251,191,36,0.36)" },
   pitchChoiceText: { color: "#f8fafc", fontSize: 11, fontWeight: "900", textAlign: "center" },
+  pitchChoiceChance: { color: "#fbbf24", fontSize: 13, lineHeight: 16, fontWeight: "900", textAlign: "center", marginTop: 2 },
   pitchChoiceHint: { color: "#bbf7d0", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 2, textAlign: "center" },
+  pitchChoiceFine: { color: "#94a3b8", fontSize: 8, lineHeight: 11, fontWeight: "800", marginTop: 1, textAlign: "center" },
   scoutCandidateName: { color: "#f8fafc", fontSize: 12, fontWeight: "900" },
   scoutCandidateMeta: { color: "#94a3b8", fontSize: 10, lineHeight: 14, fontWeight: "800", marginTop: 2 },
   scoutEmptyText: { color: "#cbd5e1", backgroundColor: "#0f172a", borderRadius: 8, padding: 10, fontSize: 11, lineHeight: 16, fontWeight: "800" },
