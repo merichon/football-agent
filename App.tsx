@@ -378,6 +378,13 @@ function createWebGameAudio() {
       [659.25, 783.99, 987.77, 1318.51].forEach((freq, index) => tone(freq, 0.18, 0.12 - index * 0.012, "triangle", index * 0.09));
       [329.63, 493.88, 659.25].forEach((freq, index) => tone(freq, 0.34, 0.06, "sine", 0.24 + index * 0.08));
       tone(1567.98, 0.2, 0.08, "square", 0.48);
+    },
+    card: async (source = "player", severity = "normal") => {
+      await ensure();
+      const base = severity === "urgent" || severity === "risk" ? 220 : source === "sponsor" ? 493.88 : source === "media" ? 739.99 : 392;
+      tone(base, 0.12, 0.055, "triangle");
+      tone(base * 1.5, 0.11, 0.035, "sine", 0.08);
+      tone(base * 2, 0.16, 0.025, "triangle", 0.18);
     }
   };
 }
@@ -857,6 +864,11 @@ export default function App() {
     getAudioEngine()?.achievement?.();
   }
 
+  function playCardSound(card) {
+    if (!soundOn || !card) return;
+    getAudioEngine()?.card?.(card.source, card.severity);
+  }
+
   function playTapSound() {
     if (!soundOn) return;
     getAudioEngine()?.tap?.();
@@ -970,6 +982,10 @@ export default function App() {
     const timer = setTimeout(() => setDecisionFlash(null), 2400);
     return () => clearTimeout(timer);
   }, [decisionFlash]);
+
+  useEffect(() => {
+    if (activeCard) playCardSound(activeCard);
+  }, [activeCard?.id, soundOn]);
 
   const lang = career?.lang || "tr";
   const tr = (key) => t(lang, key);
@@ -1143,7 +1159,7 @@ function resolveActiveCard(decision) {
         summary: "Hafta ilerlemeden önce masadaki kartı kabul veya red ile çözmen gerekiyor.",
         tone: "decline"
       });
-      openCardAgenda(priorityCards.slice(0, 3));
+      openCardAgenda(priorityCards.slice(0, 1));
       return;
     }
     setScreen("match");
@@ -1153,7 +1169,7 @@ function resolveActiveCard(decision) {
     const newCards = (finalCareer.pendingCards || [])
       .filter((card) => !previousCardIds.has(card.id))
       .sort((a, b) => severityRank(b.severity) - severityRank(a.severity));
-    const popupCards = (newCards.length ? newCards : (finalCareer.pendingCards || []).slice(0, 2)).slice(0, 3);
+    const popupCards = (newCards.length ? newCards : (finalCareer.pendingCards || []).slice(0, 1)).slice(0, 1);
     setSimState({
       preview,
       finalCareer,
@@ -1752,7 +1768,7 @@ function Dashboard({ career, tr, myPlayers, simState, onNextWeek, updateCareer, 
   };
   const openTarget = (target) => {
     if (target === "agenda") {
-      openCardAgenda(priorityCards.slice(0, 3));
+      openCardAgenda(priorityCards.slice(0, 1));
       return;
     }
     setScreen(target);
@@ -2458,7 +2474,7 @@ function MatchLiveCenter({ simState, career, onStart, onContinue, onSkip, soundO
             <Text style={styles.matchSoundText}>{soundOn ? "Ses" : "Sessiz"}</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.matchStatusLine}>{statusText} · Tüm fikstür aynı anda akar, ajans oyuncuları sarı çizgiyle öne çıkar.</Text>
+        <Text style={styles.matchStatusLine}>{statusText} · Sadece ajans oyuncularının olayları detaylanır.</Text>
       </ImageBackground>
       <View style={styles.matchLiveGrid}>
         <LeagueFixtureBoard simState={simState} career={career} representedClubIds={representedClubIds} />
@@ -2481,7 +2497,7 @@ function LeagueFixtureBoard({ simState, career, representedClubIds: providedRepr
       const bClient = representedClubIds.has(b.homeId) || representedClubIds.has(b.awayId) ? 1 : 0;
       return bClient - aClient;
     })
-    .slice(0, 7);
+    .slice(0, 5);
   return (
     <View style={styles.leagueMatchTicker}>
       <View style={styles.leagueMatchTickerTop}>
@@ -2538,11 +2554,11 @@ function AgencyEventBoard({ simState, career, fixtures = [] }) {
       (b.goals * 5 + b.shots * 2 + b.fouls + (b.last?.minute || 0) / 100) -
       (a.goals * 5 + a.shots * 2 + a.fouls + (a.last?.minute || 0) / 100)
     );
-  const visibleClients = clients.slice(0, represented.length <= 2 ? 2 : 4);
+  const visibleClients = clients.slice(0, represented.length <= 2 ? 2 : 3);
   const hiddenClientCount = Math.max(0, represented.length - visibleClients.length);
   const latestEvents = shownEvents
     .filter((event) => representedIds.has(event.playerId) && event.type !== "fulltime")
-    .slice(-3)
+    .slice(-2)
     .reverse();
   const emptyText = simState.running
     ? "Maçlar oynanıyor. Sadece senin oyuncularının gol, şut ve faul olayları burada görünür."
@@ -2905,7 +2921,7 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
       return;
     }
     if (target === "agenda") {
-      openCardAgenda(priorityCards.slice(0, 3));
+      openCardAgenda(priorityCards.slice(0, 1));
       return;
     }
     if (target === "offer") {
@@ -3061,7 +3077,7 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
       <MotiView from={{ scale: 1 }} animate={{ scale: simState ? 1 : 1.025 }} transition={{ type: "timing", duration: 850, loop: true }}>
         <TouchableOpacity
           style={[styles.weekAdvanceButton, pendingCards.length && styles.weekAdvanceAttention, simState && styles.weekAdvanceDisabled]}
-          onPress={() => pendingCards.length ? openCardAgenda(priorityCards.slice(0, 3)) : onNextWeek()}
+          onPress={() => pendingCards.length ? openCardAgenda(priorityCards.slice(0, 1)) : onNextWeek()}
           disabled={!!simState}
         >
           <Text style={styles.weekAdvanceText}>{advanceLabel}</Text>
@@ -4409,6 +4425,7 @@ function CardPopup({ card, career, tr, remaining, onDecision, onAgenda }) {
   if (!card || !career) return null;
   const weeksLeft = Math.max(0, (card.expiresWeek || career.week + 1) - career.week);
   const artwork = cardArtworkFor(card);
+  const beat = cardStoryBeat(card, tr);
   return (
     <Modal transparent visible={!!card} animationType="fade" onRequestClose={() => {}}>
       <View style={styles.modalBackdrop}>
@@ -4434,10 +4451,27 @@ function CardPopup({ card, career, tr, remaining, onDecision, onAgenda }) {
             </View>
           </View>
 
-          <ImageBackground source={artwork} style={styles.cardArtworkBanner} imageStyle={styles.cardArtworkImage}>
-            <View style={styles.cardArtworkShade} />
-            <Text style={styles.cardArtworkLabel}>{cardSourceLabel(card.source)}</Text>
-          </ImageBackground>
+          <MotiView
+            from={{ opacity: 0, translateY: 18, scale: 0.97 }}
+            animate={{ opacity: 1, translateY: 0, scale: 1 }}
+            transition={{ type: "timing", duration: 430, delay: 80 }}
+            style={styles.cardStoryStage}
+          >
+            <ImageBackground source={artwork} style={styles.cardArtworkBanner} imageStyle={styles.cardArtworkImage}>
+              <View style={styles.cardArtworkShade} />
+              <MotiView
+                from={{ opacity: 0.72, translateX: -4 }}
+                animate={{ opacity: 1, translateX: 5 }}
+                transition={{ type: "timing", duration: 560, loop: true }}
+                style={styles.cardArtworkDrift}
+              />
+              <Text style={styles.cardArtworkLabel}>{cardSourceLabel(card.source)}</Text>
+            </ImageBackground>
+            <View style={styles.cardStoryCaption}>
+              <Text style={styles.cardStoryKicker}>{beat.kicker}</Text>
+              <Text style={styles.cardStoryText} numberOfLines={2}>{beat.line}</Text>
+            </View>
+          </MotiView>
 
           <RevealWords text={tr(card.titleKey)} textStyle={styles.modalTitle} />
           <Text style={styles.modalBody}>{tr(card.bodyKey)}</Text>
@@ -4479,6 +4513,19 @@ function CardPopup({ card, career, tr, remaining, onDecision, onAgenda }) {
       </View>
     </Modal>
   );
+}
+
+function cardStoryBeat(card = {}, tr = (key) => key) {
+  const source = card.source || "player";
+  const severity = card.severity || "normal";
+  const title = tr(card.titleKey);
+  if (source === "club") return { kicker: "Pazarlık odası", line: `${title} kapıyı araladı. Kulübü memnun etmekle oyuncuyu korumak aynı anda mümkün olmayabilir.` };
+  if (source === "media") return { kicker: severity === "urgent" ? "Flaş gelişme" : "Medya koridoru", line: `${title} ajansın adını manşete taşıyabilir. Yanlış cümle saygınlığı yakar.` };
+  if (source === "sponsor") return { kicker: "Marka masası", line: `${title} parayı ve görünürlüğü aynı anda getirir; ama oyuncu hikayesi ucuz reklam gibi görünmemeli.` };
+  if (source === "tournament") return { kicker: "Scout yolu", line: `${title} yeni yetenek kapısı açar. Harcama bugünden, fırsat haftalar sonra gelir.` };
+  if (source === "legend") return { kicker: "Prestij sahnesi", line: `${title} küçük ajansa büyük gölge düşürür. Doğru duruş saygınlık kazandırır.` };
+  if (source === "finance") return { kicker: "Risk defteri", line: `${title} hızlı para kokusu taşır. Kasa büyürken itibar açıkta kalabilir.` };
+  return { kicker: "Oyuncu hikayesi", line: `${title} artık kişisel bir dosya. Kabul veya red, oyuncunun sana bakışını değiştirecek.` };
 }
 
 function DecisionFlash({ flash }) {
@@ -5977,20 +6024,20 @@ const styles = StyleSheet.create({
   weekReportFooter: { borderTopWidth: 1, borderTopColor: "rgba(134,239,172,0.18)", paddingTop: 7, marginTop: 0 },
   weekReportActionButton: { minHeight: 39, borderRadius: 8, backgroundColor: "#fbbf24", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#fde68a" },
   weekReportActionText: { color: "#111827", fontSize: 13, fontWeight: "900" },
-  matchScreen: { flex: 1, paddingHorizontal: 8, paddingTop: 8, paddingBottom: 6, backgroundColor: "#05070c" },
-  matchLiveShell: { flex: 1, width: "100%", maxWidth: 430, alignSelf: "center", gap: 6 },
-  matchLiveGrid: { flex: 1, gap: 5 },
-  matchDayHero: { backgroundColor: "#071a18", borderColor: "rgba(134,239,172,0.28)", borderWidth: 1, borderRadius: 8, padding: 7, marginBottom: 0, overflow: "hidden" },
+  matchScreen: { flex: 1, paddingHorizontal: 7, paddingTop: 6, paddingBottom: 5, backgroundColor: "#05070c" },
+  matchLiveShell: { flex: 1, width: "100%", maxWidth: 430, alignSelf: "center", gap: 5 },
+  matchLiveGrid: { flex: 1, gap: 4 },
+  matchDayHero: { backgroundColor: "#071a18", borderColor: "rgba(134,239,172,0.28)", borderWidth: 1, borderRadius: 8, padding: 6, marginBottom: 0, overflow: "hidden" },
   matchDayHeroImage: { borderRadius: 8, opacity: 0.72 },
   matchDayHeroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(2,6,23,0.54)" },
-  matchDayTopLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 },
-  matchDayKicker: { color: "#fbbf24", fontSize: 11, fontWeight: "900" },
-  matchDayTitle: { color: "#f8fafc", fontSize: 20, lineHeight: 23, fontWeight: "900", marginTop: 1 },
+  matchDayTopLine: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 },
+  matchDayKicker: { color: "#fbbf24", fontSize: 10, fontWeight: "900" },
+  matchDayTitle: { color: "#f8fafc", fontSize: 17, lineHeight: 20, fontWeight: "900", marginTop: 0 },
   matchDayStatusPill: { color: "#052e16", backgroundColor: "#bbf7d0", borderRadius: 7, overflow: "hidden", paddingHorizontal: 8, paddingVertical: 3, fontSize: 10, fontWeight: "900" },
   matchDayStatusLive: { color: "#111827", backgroundColor: "#fbbf24" },
-  matchLiveStats: { flexDirection: "row", gap: 5, backgroundColor: "rgba(2,6,23,0.28)", borderRadius: 8, padding: 4, marginTop: 4 },
-  matchLiveStatBox: { flex: 1, minHeight: 36, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(15,23,42,0.82)", borderColor: "rgba(125,211,252,0.16)", borderWidth: 1, borderRadius: 8 },
-  matchLiveStatValue: { color: "#f8fafc", fontSize: 15, lineHeight: 18, fontWeight: "900" },
+  matchLiveStats: { flexDirection: "row", gap: 4, backgroundColor: "rgba(2,6,23,0.28)", borderRadius: 8, padding: 3, marginTop: 3 },
+  matchLiveStatBox: { flex: 1, minHeight: 31, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(15,23,42,0.82)", borderColor: "rgba(125,211,252,0.16)", borderWidth: 1, borderRadius: 8 },
+  matchLiveStatValue: { color: "#f8fafc", fontSize: 13, lineHeight: 16, fontWeight: "900" },
   matchLiveStatLabel: { color: "#9fb3c8", fontSize: 8, lineHeight: 10, fontWeight: "900" },
   matchScoreBoardCompact: { flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "rgba(15,23,42,0.76)", borderColor: "rgba(187,247,208,0.18)", borderWidth: 1, borderRadius: 8, padding: 7 },
   matchTeamCompact: { flex: 1, minWidth: 0, alignItems: "center", gap: 4 },
@@ -6000,7 +6047,7 @@ const styles = StyleSheet.create({
   matchScoreBig: { color: "#f8fafc", fontSize: 26, lineHeight: 31, fontWeight: "900", marginTop: 1 },
   matchScoreDash: { color: "#94a3b8" },
   matchStatusTiny: { color: "#94a3b8", fontSize: 9, fontWeight: "900" },
-  matchProgressTrack: { height: 6, backgroundColor: "#0f172a", borderRadius: 8, overflow: "hidden", marginTop: 6 },
+  matchProgressTrack: { height: 5, backgroundColor: "#0f172a", borderRadius: 8, overflow: "hidden", marginTop: 5 },
   matchProgressFill: { height: "100%", backgroundColor: "#f59e0b" },
   matchDayMeta: { color: "#94a3b8", fontSize: 11, fontWeight: "800", marginTop: 7 },
   matchQuickStats: { flexDirection: "row", gap: 5, marginTop: 6 },
@@ -6008,20 +6055,20 @@ const styles = StyleSheet.create({
   matchWatchReason: { backgroundColor: "rgba(15,23,42,0.76)", borderColor: "rgba(125,211,252,0.22)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 5, marginTop: 6 },
   matchWatchReasonKicker: { color: "#7dd3fc", fontSize: 9, fontWeight: "900" },
   matchWatchReasonText: { color: "#e0f2fe", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 1 },
-  matchControls: { flexDirection: "row", gap: 7, marginTop: 6 },
-  matchControlButton: { flex: 1, backgroundColor: "#0f172a", borderColor: "#475569", borderWidth: 1, borderRadius: 8, paddingVertical: 8, alignItems: "center" },
-  matchControlPrimary: { flex: 1.2, backgroundColor: "#f59e0b", borderColor: "#fbbf24", borderWidth: 1, borderRadius: 8, paddingVertical: 8, alignItems: "center" },
-  matchControlText: { color: "#f8fafc", fontSize: 12, fontWeight: "900" },
-  matchSoundButton: { minWidth: 54, backgroundColor: "rgba(15,23,42,0.78)", borderColor: "rgba(125,211,252,0.28)", borderWidth: 1, borderRadius: 8, paddingVertical: 8, alignItems: "center", paddingHorizontal: 7 },
+  matchControls: { flexDirection: "row", gap: 6, marginTop: 5 },
+  matchControlButton: { flex: 1, backgroundColor: "#0f172a", borderColor: "#475569", borderWidth: 1, borderRadius: 8, paddingVertical: 7, alignItems: "center" },
+  matchControlPrimary: { flex: 1.2, backgroundColor: "#f59e0b", borderColor: "#fbbf24", borderWidth: 1, borderRadius: 8, paddingVertical: 7, alignItems: "center" },
+  matchControlText: { color: "#f8fafc", fontSize: 11, fontWeight: "900" },
+  matchSoundButton: { minWidth: 49, backgroundColor: "rgba(15,23,42,0.78)", borderColor: "rgba(125,211,252,0.28)", borderWidth: 1, borderRadius: 8, paddingVertical: 7, alignItems: "center", paddingHorizontal: 6 },
   matchSoundText: { color: "#dbeafe", fontSize: 11, fontWeight: "900" },
-  matchStatusLine: { color: "#9fb3c8", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 5 },
-  leagueMatchTicker: { width: "100%", maxWidth: 430, alignSelf: "center", backgroundColor: "#0b1827", borderColor: "rgba(125,211,252,0.22)", borderWidth: 1, borderRadius: 8, padding: 6, gap: 2, marginBottom: 0 },
+  matchStatusLine: { color: "#9fb3c8", fontSize: 8, lineHeight: 11, fontWeight: "800", marginTop: 4 },
+  leagueMatchTicker: { width: "100%", maxWidth: 430, alignSelf: "center", backgroundColor: "#0b1827", borderColor: "rgba(125,211,252,0.22)", borderWidth: 1, borderRadius: 8, padding: 5, gap: 2, marginBottom: 0 },
   leagueMatchTickerTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 2 },
   leagueMatchTickerTitleBlock: { flex: 1 },
   leagueMatchTickerTitle: { color: "#dbeafe", fontSize: 11, fontWeight: "900" },
   leagueMatchTickerHint: { color: "#94a3b8", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 1 },
   leagueMatchTickerBadge: { color: "#082f49", backgroundColor: "#7dd3fc", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 9, fontWeight: "900" },
-  leagueMatchRow: { minHeight: 21, flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#101827", borderColor: "rgba(148,163,184,0.12)", borderWidth: 1, borderRadius: 7, paddingHorizontal: 6 },
+  leagueMatchRow: { minHeight: 19, flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "#101827", borderColor: "rgba(148,163,184,0.12)", borderWidth: 1, borderRadius: 7, paddingHorizontal: 6 },
   leagueMatchRowClient: { borderColor: "rgba(251,191,36,0.38)", backgroundColor: "#171b15" },
   leagueMatchTeam: { flex: 1, color: "#dbeafe", fontSize: 10, fontWeight: "800" },
   leagueMatchTeamRight: { flex: 1, color: "#dbeafe", fontSize: 10, fontWeight: "800", textAlign: "right" },
@@ -6031,10 +6078,10 @@ const styles = StyleSheet.create({
   leagueMatchStateLive: { color: "#22c55e" },
   leagueMatchStateDone: { color: "#fbbf24" },
   leagueMatchMore: { color: "#94a3b8", fontSize: 9, fontWeight: "800", textAlign: "center", paddingTop: 2 },
-  compactMatchFeed: { width: "100%", maxWidth: 430, alignSelf: "center", backgroundColor: "#101827", borderColor: "rgba(134,239,172,0.20)", borderWidth: 1, borderRadius: 8, padding: 7, gap: 5 },
+  compactMatchFeed: { width: "100%", maxWidth: 430, alignSelf: "center", backgroundColor: "#101827", borderColor: "rgba(134,239,172,0.20)", borderWidth: 1, borderRadius: 8, padding: 6, gap: 4 },
   compactClientRail: { flexDirection: "row", gap: 6 },
   compactClientGrid: { flexDirection: "row", flexWrap: "wrap", gap: 5 },
-  compactClientPill: { flexGrow: 1, flexBasis: "48%", minHeight: 54, flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#0d2a1d", borderColor: "rgba(134,239,172,0.24)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 5 },
+  compactClientPill: { flexGrow: 1, flexBasis: "48%", minHeight: 48, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#0d2a1d", borderColor: "rgba(134,239,172,0.24)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 5, paddingVertical: 4 },
   compactClientPillIdle: { opacity: 0.72, backgroundColor: "#111827", borderColor: "rgba(148,163,184,0.18)" },
   compactClientName: { color: "#f8fafc", fontSize: 11, lineHeight: 14, fontWeight: "900" },
   compactClientMeta: { color: "#bbf7d0", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 1 },
@@ -6044,7 +6091,7 @@ const styles = StyleSheet.create({
   compactFeedTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   compactFeedTitle: { color: "#f8fafc", fontSize: 12, fontWeight: "900" },
   compactFeedBadge: { color: "#111827", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 10, fontWeight: "900" },
-  compactFeedLine: { minHeight: 30, flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#0f172a", borderRadius: 7, paddingHorizontal: 7, paddingVertical: 4 },
+  compactFeedLine: { minHeight: 28, flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#0f172a", borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3 },
   compactFeedGoal: { backgroundColor: "#2a210f", borderWidth: 1, borderColor: "rgba(251,191,36,0.28)" },
   compactFeedFoul: { backgroundColor: "#24131b", borderWidth: 1, borderColor: "rgba(248,113,113,0.22)" },
   compactFeedMinute: { width: 31, color: "#fbbf24", fontSize: 11, fontWeight: "900", textAlign: "center" },
@@ -6393,23 +6440,28 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, backgroundColor: "rgba(2,6,23,0.72)", justifyContent: "center", padding: 18 },
   modalStackGhostTwo: { position: "absolute", left: 34, right: 34, alignSelf: "center", height: 300, borderRadius: 10, backgroundColor: "rgba(15,23,42,0.54)", borderWidth: 1, borderColor: "rgba(148,163,184,0.12)", transform: [{ rotate: "4deg" }] },
   modalStackGhostOne: { position: "absolute", left: 26, right: 26, alignSelf: "center", height: 310, borderRadius: 10, backgroundColor: "rgba(15,23,42,0.72)", borderWidth: 1, borderColor: "rgba(251,191,36,0.12)", transform: [{ rotate: "-3deg" }] },
-  cardModal: { position: "relative", overflow: "hidden", backgroundColor: "#172033", borderColor: "#475569", borderWidth: 1, borderRadius: 8, padding: 16, shadowColor: "#000000", shadowOpacity: 0.34, shadowRadius: 18, shadowOffset: { width: 0, height: 10 } },
+  cardModal: { position: "relative", overflow: "hidden", backgroundColor: "#172033", borderColor: "#475569", borderWidth: 1, borderRadius: 10, padding: 13, maxWidth: 430, width: "100%", alignSelf: "center", shadowColor: "#000000", shadowOpacity: 0.34, shadowRadius: 18, shadowOffset: { width: 0, height: 10 } },
   modalShine: { position: "absolute", right: -42, top: -46, width: 160, height: 160, borderRadius: 160, backgroundColor: "rgba(251,191,36,0.10)" },
-  modalTopLine: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
-  cardArtworkBanner: { height: 104, borderRadius: 8, overflow: "hidden", justifyContent: "flex-end", marginBottom: 12, borderWidth: 1, borderColor: "rgba(251,191,36,0.20)", backgroundColor: "#07120d" },
+  modalTopLine: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 9 },
+  cardStoryStage: { borderRadius: 10, overflow: "hidden", marginBottom: 10, borderWidth: 1, borderColor: "rgba(251,191,36,0.20)", backgroundColor: "#07120d" },
+  cardArtworkBanner: { height: 92, overflow: "hidden", justifyContent: "flex-end", backgroundColor: "#07120d" },
   cardArtworkImage: { borderRadius: 8, resizeMode: "contain" },
   cardArtworkShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(2,6,23,0.22)" },
+  cardArtworkDrift: { position: "absolute", left: -36, top: 0, bottom: 0, width: 78, backgroundColor: "rgba(255,255,255,0.08)", transform: [{ skewX: "-18deg" }] },
   cardArtworkLabel: { alignSelf: "flex-start", margin: 8, color: "#111827", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 8, paddingVertical: 3, fontSize: 10, fontWeight: "900" },
-  modalKicker: { color: "#fbbf24", fontSize: 12, fontWeight: "900" },
-  modalMeta: { color: "#94a3b8", fontSize: 11, marginTop: 2 },
-  modalTitle: { color: "#ffffff", fontSize: 21, lineHeight: 27, fontWeight: "900", marginBottom: 8 },
-  modalBody: { color: "#dbeafe", fontSize: 14, lineHeight: 21 },
-  modalContext: { backgroundColor: "#0f172a", borderColor: "#334155", borderWidth: 1, borderRadius: 8, padding: 9, marginTop: 10 },
-  modalContextText: { color: "#cbd5e1", fontSize: 11, lineHeight: 16, fontWeight: "800" },
-  cardClock: { flexDirection: "row", gap: 6, marginTop: 11 },
+  cardStoryCaption: { paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "rgba(251,191,36,0.16)", backgroundColor: "rgba(8,17,29,0.94)" },
+  cardStoryKicker: { color: "#fbbf24", fontSize: 10, lineHeight: 13, fontWeight: "900" },
+  cardStoryText: { color: "#dbeafe", fontSize: 11, lineHeight: 15, fontWeight: "800", marginTop: 2 },
+  modalKicker: { color: "#fbbf24", fontSize: 11, fontWeight: "900" },
+  modalMeta: { color: "#94a3b8", fontSize: 10, marginTop: 1 },
+  modalTitle: { color: "#ffffff", fontSize: 19, lineHeight: 24, fontWeight: "900", marginBottom: 6 },
+  modalBody: { color: "#dbeafe", fontSize: 13, lineHeight: 19 },
+  modalContext: { backgroundColor: "#0f172a", borderColor: "#334155", borderWidth: 1, borderRadius: 8, padding: 8, marginTop: 8 },
+  modalContextText: { color: "#cbd5e1", fontSize: 10, lineHeight: 14, fontWeight: "800" },
+  cardClock: { flexDirection: "row", gap: 6, marginTop: 9 },
   cardClockTick: { flex: 1, height: 5, borderRadius: 8, backgroundColor: "#fbbf24" },
-  modalEffects: { gap: 7, marginTop: 12 },
-  modalActions: { flexDirection: "row", gap: 8, marginTop: 14, flexWrap: "wrap" },
+  modalEffects: { gap: 6, marginTop: 9 },
+  modalActions: { flexDirection: "row", gap: 8, marginTop: 11, flexWrap: "wrap" },
   modalActionMotion: { flexGrow: 1, minWidth: 96 },
   modalAgendaButton: { marginTop: 10, borderRadius: 8, borderWidth: 1, borderColor: "#64748b", paddingVertical: 10, alignItems: "center" },
   modalAgendaText: { color: "#cbd5e1", fontSize: 12, fontWeight: "900" },

@@ -1862,7 +1862,7 @@ export function advanceWeek(career, preparedPreview = null) {
   const expiredCardItems = (career.pendingCards || []).filter((card) => card.expiresWeek && card.expiresWeek < week);
   const activePendingCards = dedupeCards((career.pendingCards || []).filter((card) => !card.expiresWeek || card.expiresWeek >= week));
   const expiredCards = expiredCardItems.length;
-  const newCards = [...generateEthicsScandalCards(career, week, activePendingCards), ...generateGoalMilestoneCards(players, week, activePendingCards), ...generateWeeklyCards(career, week, activePendingCards)].slice(0, 4);
+  const newCards = [...generateEthicsScandalCards(career, week, activePendingCards), ...generateGoalMilestoneCards(players, week, activePendingCards), ...generateWeeklyCards(career, week, activePendingCards)].slice(0, 1);
   const expiredPressure = expiredCards;
   const pressuredPlayers = expiredPressure
     ? players.map((player) => player.represented
@@ -2257,10 +2257,7 @@ function dedupeCards(cards) {
 }
 
 function generateWeeklyCards(career, week, activeCards = []) {
-  const eventRoll = seeded(week + career.reputation + getRepresentedPlayers(career).length * 13);
-  const focusEventBonus = career.weeklyFocus === "pr" || career.weeklyFocus === "care" ? 1 : 0;
-  const baseDesired = eventRoll > 0.88 ? 3 : eventRoll > 0.58 ? 2 : 1;
-  const desired = Math.min(3, Math.max(1, baseDesired + focusEventBonus));
+  const desired = 1;
   const ownedSponsors = career.empire?.sponsors?.length || 0;
   const staffCount = career.empire?.staff?.length || 0;
   const activeTemplateIds = new Set(activeCards.map((card) => card.templateId || card.id));
