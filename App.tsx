@@ -84,9 +84,9 @@ const navScreens = ["dashboard", "inbox", "players", "clubs", "scout"];
 const stadiumImage = require("./assets/backgrounds/stadium-night.png");
 const matchPitchImage = require("./assets/art/backgrounds/match-night-pixel.png");
 const storySceneImages = [
-  require("./assets/art/story/story-lobby.png"),
-  require("./assets/art/story/story-office-rejection.png"),
-  require("./assets/art/story/story-third-league-prospects.png")
+  require("./assets/art/story/story-lobby.jpg"),
+  require("./assets/art/story/story-office-rejection.jpg"),
+  require("./assets/art/story/story-third-league-prospects.jpg")
 ];
 const portraitLibrary = [
   require("./assets/art/ai-portraits/agent-portrait-01.png"),
@@ -676,15 +676,30 @@ function AgentCreator({ avatar, setAvatar }) {
       <View style={styles.agentCreatorRows}>
         {rows.map(([group, label]) => {
           const active = getAvatarPart(group, avatar);
+          const activeIndex = avatar[group] ?? 0;
+          const options = agentAvatarOptions[group] || [];
           return (
             <View key={group} style={styles.agentOptionRow}>
-              <Text style={styles.agentOptionLabel}>{label}</Text>
               <TouchableOpacity style={styles.agentOptionArrow} onPress={() => setAvatar(shiftAvatarPart(avatar, group, -1))}>
                 <Text style={styles.agentOptionArrowText}>‹</Text>
               </TouchableOpacity>
-              <View style={styles.agentOptionValue}>
-                <Text style={styles.agentOptionValueText}>{active.label}</Text>
-                <View style={[styles.agentOptionSwatch, { backgroundColor: active.color || active.jacket || "#94a3b8" }]} />
+              <View style={styles.agentOptionMain}>
+                <View style={styles.agentOptionHeader}>
+                  <Text style={styles.agentOptionLabel}>{label}</Text>
+                  <Text style={styles.agentOptionValueText}>{active.label}</Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.agentOptionStrip}>
+                  {options.map((option, index) => (
+                    <TouchableOpacity
+                      key={option.id}
+                      style={[styles.agentOptionChip, index === activeIndex && styles.agentOptionChipActive]}
+                      onPress={() => setAvatar({ ...avatar, [group]: index })}
+                    >
+                      <View style={[styles.agentOptionSwatch, { backgroundColor: option.color || option.jacket || "#94a3b8" }]} />
+                      <Text style={[styles.agentOptionChipText, index === activeIndex && styles.agentOptionChipTextActive]}>{option.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
               <TouchableOpacity style={styles.agentOptionArrow} onPress={() => setAvatar(shiftAvatarPart(avatar, group, 1))}>
                 <Text style={styles.agentOptionArrowText}>›</Text>
@@ -1465,8 +1480,8 @@ function SetupCareer({ career, tr, onComplete }) {
     {
       kicker: "Kart 1 / 3",
       art: storySceneImages[0],
-      title: "Lobide bekleyen kimse",
-      text: `${career.agentName}, son parasını uçak biletine ve ucuz bir takım elbiseye gömüp Ronaldo'nun sezon öncesi kampına gelir. Randevu yoktur; sadece elinde ince bir dosya ve 'beni yeni ajansın yap' diyecek kadar cesaret vardır.`,
+      title: "C.R.7 kapısında",
+      text: `${career.agentName}, son parasını uçak biletine ve ucuz bir takım elbiseye gömüp C.R.7 lakaplı kurgusal futbol efsanesinin sezon öncesi kampına gelir. Randevu yoktur; sadece elinde ince bir dosya ve 'beni yeni ajansın yap' diyecek kadar cesaret vardır.`,
       action: "Kapının önüne git",
       choices: [
         { label: "Güvenli konuş", hint: "Kendini sakin anlat" },
@@ -1477,7 +1492,7 @@ function SetupCareer({ career, tr, onComplete }) {
       kicker: "Kart 2 / 3",
       art: storySceneImages[1],
       title: "Beş dakikalık görüşme",
-      text: "Dosyaya bakarlar: temsil ettiğin oyuncu yok, kulüp referansı yok, banka hesabı zayıf. Ronaldo gülmez bile; asıl ağır olan bu olur. Ekibinden biri sadece şunu söyler: 'Yıldız oyuncu isteme. Önce bir kariyer kurtar.'",
+      text: "Dosyaya bakarlar: temsil ettiğin oyuncu yok, kulüp referansı yok, banka hesabı zayıf. C.R.7 gülmez bile; asıl ağır olan bu olur. Ekibinden biri sadece şunu söyler: 'Yıldız oyuncu isteme. Önce bir kariyer kurtar.'",
       action: "Cevap veremeden sus",
       choices: [
         { label: "İtiraz et", hint: "Bir şans daha iste" },
@@ -1548,7 +1563,7 @@ function SetupCareer({ career, tr, onComplete }) {
           <PremiumSheen delay={200} color="rgba(251,191,36,0.16)" />
           <Text style={styles.setupKicker}>Kırılmadan sonraki ilk hamle</Text>
           <RevealWords text="İlk kaderini seç" textStyle={styles.setupTitle} />
-          <Text style={styles.setupCopy}>Ronaldo kapısı kapandı. Bu üç oyuncudan biri ilk referansın olacak. Yanlış seçim aylar kaybettirir; doğru seçim ajansının adını ilk kez duyurur.</Text>
+          <Text style={styles.setupCopy}>C.R.7 kapısı kapandı. Bu üç oyuncudan biri ilk referansın olacak. Yanlış seçim aylar kaybettirir; doğru seçim ajansının adını ilk kez duyurur.</Text>
         </View>
         {thirdLeagueCandidates.map((player, index) => {
           const club = career.db.clubs.find((item) => item.id === player.clubId);
@@ -5512,13 +5527,19 @@ const styles = StyleSheet.create({
   agentCreatorCopy: { flex: 1, minWidth: 0 },
   agentCreatorTitle: { color: "#f8fafc", fontSize: 14, fontWeight: "900" },
   agentCreatorText: { color: "#cbd5e1", fontSize: 10, lineHeight: 14, fontWeight: "800", marginTop: 4 },
-  agentCreatorRows: { gap: 6 },
-  agentOptionRow: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 34 },
-  agentOptionLabel: { width: 64, color: "#93c5fd", fontSize: 10, fontWeight: "900" },
-  agentOptionArrow: { width: 31, height: 31, borderRadius: 8, backgroundColor: "#0f172a", borderWidth: 1, borderColor: "rgba(148,163,184,0.28)", alignItems: "center", justifyContent: "center" },
+  agentCreatorRows: { gap: 8 },
+  agentOptionRow: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 54 },
+  agentOptionMain: { flex: 1, minWidth: 0 },
+  agentOptionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 4 },
+  agentOptionLabel: { color: "#93c5fd", fontSize: 10, fontWeight: "900" },
+  agentOptionArrow: { width: 31, height: 46, borderRadius: 8, backgroundColor: "#0f172a", borderWidth: 1, borderColor: "rgba(148,163,184,0.28)", alignItems: "center", justifyContent: "center" },
   agentOptionArrowText: { color: "#f8fafc", fontSize: 21, lineHeight: 23, fontWeight: "900" },
-  agentOptionValue: { flex: 1, minHeight: 31, borderRadius: 8, backgroundColor: "rgba(15,23,42,0.82)", borderWidth: 1, borderColor: "rgba(134,239,172,0.18)", paddingHorizontal: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  agentOptionValueText: { color: "#f8fafc", fontSize: 11, fontWeight: "900" },
+  agentOptionValueText: { color: "#f8fafc", fontSize: 10, fontWeight: "900" },
+  agentOptionStrip: { gap: 6, paddingRight: 6 },
+  agentOptionChip: { minHeight: 30, borderRadius: 8, backgroundColor: "rgba(15,23,42,0.82)", borderColor: "rgba(148,163,184,0.18)", borderWidth: 1, paddingHorizontal: 7, flexDirection: "row", alignItems: "center", gap: 5 },
+  agentOptionChipActive: { backgroundColor: "#e0f2fe", borderColor: "#7dd3fc" },
+  agentOptionChipText: { color: "#cbd5e1", fontSize: 9, fontWeight: "900" },
+  agentOptionChipTextActive: { color: "#052e16" },
   agentOptionSwatch: { width: 18, height: 18, borderRadius: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.34)" },
   agentAvatarStage: { alignItems: "center", justifyContent: "flex-end", position: "relative" },
   agentAvatarGlow: { position: "absolute", bottom: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.14)" },
