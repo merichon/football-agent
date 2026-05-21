@@ -2125,7 +2125,9 @@ function buildWeekReport(previousCareer, nextCareer, preview, popupCards = []) {
         formDelta: (player.form || 0) - (before.form || player.form || 0),
         trustDelta: (player.agencyTrust || 0) - (before.agencyTrust || player.agencyTrust || 0),
         goalDelta: player.lastGoalDelta || 0,
+        goalProgress: player.goalProgress ?? player.careerGoal?.start ?? 40,
         marketHeat: player.marketHeat || 0,
+        marketHeatDelta: (player.marketHeat || 0) - (before.marketHeat || 0),
         activeCareerPlan: player.activeCareerPlan || null,
         goalsDelta: (statsAfter.goals || 0) - (statsBefore.goals || 0),
         shotsDelta: (statsAfter.shots || 0) - (statsBefore.shots || 0),
@@ -2190,6 +2192,7 @@ function WeekReportModal({ report, onClose }) {
     ...(report.completedObjectives || []).map((item) => ({ ...item, kind: "Hedef" }))
   ].slice(0, 2);
   const reportPlayers = (report.playerChanges || []).slice(0, 3);
+  const planResults = (report.playerChanges || []).filter((item) => item.activeCareerPlan).slice(0, 2);
   const matchNotes = (report.matchHighlights || []).slice(-2);
   const compactNotes = [
     `Scout +${report.discovered}`,
@@ -2260,6 +2263,20 @@ function WeekReportModal({ report, onClose }) {
                   </View>
                 ))}
               </View>
+            </View>
+          )}
+
+          {planResults.length > 0 && (
+            <View style={[styles.weekReportSection, styles.weekReportPlanSection]}>
+              <Text style={styles.weekReportSectionTitle}>Plan Sonucu</Text>
+              {planResults.map((item) => (
+                <View key={`${item.id}-plan`} style={styles.weekReportPlanRow}>
+                  <Text style={styles.weekReportPlanName} numberOfLines={1}>{item.name} · {careerPlanLabel(item.activeCareerPlan)}</Text>
+                  <Text style={styles.weekReportPlanMeta} numberOfLines={1}>
+                    Piyasa {formatSignedNumber(item.marketHeatDelta)} → {item.marketHeat}/100 · Hedef {item.goalProgress}/100
+                  </Text>
+                </View>
+              ))}
             </View>
           )}
 
@@ -5860,6 +5877,10 @@ const styles = StyleSheet.create({
   weekReportPlayerRow: { flexGrow: 1, flexBasis: "48%", minHeight: 50, backgroundColor: "#111827", borderRadius: 7, paddingHorizontal: 6, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(134,239,172,0.12)" },
   weekReportPlayerName: { color: "#f8fafc", fontSize: 10, lineHeight: 13, fontWeight: "900" },
   weekReportPlayerMeta: { color: "#cbd5e1", fontSize: 8, lineHeight: 11, fontWeight: "800", marginTop: 1 },
+  weekReportPlanSection: { borderColor: "rgba(125,211,252,0.30)", backgroundColor: "rgba(8,47,73,0.34)" },
+  weekReportPlanRow: { backgroundColor: "#101827", borderRadius: 7, paddingHorizontal: 7, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(125,211,252,0.20)" },
+  weekReportPlanName: { color: "#f8fafc", fontSize: 10, lineHeight: 13, fontWeight: "900" },
+  weekReportPlanMeta: { color: "#bae6fd", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 1 },
   weekReportEvent: { color: "#dbeafe", fontSize: 9, lineHeight: 12, fontWeight: "800", backgroundColor: "#111827", borderRadius: 7, paddingHorizontal: 7, paddingVertical: 4 },
   weekReportNext: { backgroundColor: "#0d2a1d", borderRadius: 8, borderWidth: 1, borderColor: "rgba(134,239,172,0.22)", paddingHorizontal: 8, paddingVertical: 7, marginBottom: 7 },
   weekReportNextKicker: { color: "#86efac", fontSize: 9, lineHeight: 12, fontWeight: "900" },

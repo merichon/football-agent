@@ -144,7 +144,7 @@ export function formatMoney(value) {
 
 export function createInitialCareer(agentName = "Kasey Sung", db = demoDb, lang = "tr") {
   const seed = Date.now();
-  const preparedDb = hydrateGeneratedNames(db, seed, db.meta?.id === "fictional-core");
+  const preparedDb = hydrateGeneratedNames(db, seed, db.meta?.id === "fictional-core" || db.meta?.generateNames);
   const cleanPlayers = preparedDb.players.map((player) => ({
     ...player,
     represented: false,

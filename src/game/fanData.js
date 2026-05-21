@@ -71,33 +71,16 @@ const STATSBOMB_SOURCE = {
 };
 
 export const FAN_DATA_SOURCE_LEDGER = [
-  OPENFOOTBALL_SOURCE,
   OPENFOOTBALL_FIXTURES_SOURCE,
   REEP_REGISTER_SOURCE
 ];
 
 export async function buildOpenFootballDataPack(onProgress = () => {}) {
-  assertRedistributableSource(OPENFOOTBALL_SOURCE);
   assertRedistributableSource(OPENFOOTBALL_FIXTURES_SOURCE);
-  const loaded = [];
-  for (let index = 0; index < OPENFOOTBALL_COUNTRIES.length; index += 1) {
-    const country = OPENFOOTBALL_COUNTRIES[index];
-    onProgress({ step: `${country.label} oyunculari araniyor`, current: index + 1, total: OPENFOOTBALL_COUNTRIES.length });
-    try {
-      const fileUrl = await findPlayersFile(country.folder);
-      if (!fileUrl) continue;
-      const response = await fetch(fileUrl);
-      if (!response.ok) continue;
-      const text = await response.text();
-      loaded.push(...parseOpenFootballPlayers(text, country.countryId));
-    } catch (error) {
-      // Some country folders may move over time; keep the pack usable with the countries that load.
-    }
-  }
   const fixtureDb = await loadOpenFootballFixtures(onProgress);
   const baseClubs = fixtureDb?.clubs?.length ? fixtureDb.clubs : demoDb.clubs;
-  const players = assignPlayersToFixtureClubs(loaded.slice(0, 260).map((player, index) => toGamePlayer(player, index, baseClubs)), baseClubs);
-  if (players.length < 20) throw new Error("OpenFootball oyuncu verisi yuklenemedi.");
+  onProgress({ step: "Kurgusal oyuncu havuzu olusturuluyor", current: 1, total: 1 });
+  const players = assignPlayersToFixtureClubs(createSyntheticFanPackPlayers(baseClubs, 260), baseClubs);
   const statsBomb = await loadStatsBombInsights(onProgress);
   return {
     ...demoDb,
@@ -105,12 +88,14 @@ export async function buildOpenFootballDataPack(onProgress = () => {}) {
       ...demoDb.meta,
       id: "openfootball-fan-pack",
       name: "OpenFootball Fan Data Pack",
-      source: OPENFOOTBALL_SOURCE.url,
-      license: OPENFOOTBALL_SOURCE.license,
+      source: OPENFOOTBALL_FIXTURES_SOURCE.url,
+      license: OPENFOOTBALL_FIXTURES_SOURCE.license,
       dataSources: FAN_DATA_SOURCE_LEDGER,
+      generateNames: true,
       identitySchema: "reep-compatible-local-v1",
       identityProviderKeys: REEP_PROVIDER_KEYS,
       fixtureSchema: "openfootball-football-json-compatible",
+      importWarnings: ["GitHub API limitine takilmamak icin oyuncu isimleri uzaktan cekilmez; acik lisansli fikstur yapisina kurgusal oyuncu havuzu uretilir."],
       blockedSources: statsBomb?.blocked ? [statsBomb] : undefined
     },
     countries: fixtureDb?.countries?.length ? mergeById(demoDb.countries, fixtureDb.countries) : demoDb.countries,
@@ -121,6 +106,45 @@ export async function buildOpenFootballDataPack(onProgress = () => {}) {
     identityIndex: buildIdentityIndex({ players, clubs: fixtureDb?.clubs || [] }),
     analytics: statsBomb?.blocked ? undefined : statsBomb || undefined
   };
+}
+
+function createSyntheticFanPackPlayers(baseClubs = demoDb.clubs, count = 240) {
+  const clubs = baseClubs.length ? baseClubs : demoDb.clubs;
+  return Array.from({ length: count }, (_, index) => {
+    const club = clubs[index % clubs.length] || demoDb.clubs[index % demoDb.clubs.length];
+    const league = [...demoDb.leagues].find((item) => item.id === club.leagueId);
+    const countryId = league?.countryId || club.countryId || "tr";
+    const tier = league?.tier || 3;
+    const age = 17 + ((index * 7 + tier) % 14);
+    const overall = Math.max(48, (tier === 1 ? 66 : tier === 2 ? 59 : 52) + (index % 10));
+    const potential = Math.min(94, overall + 7 + ((index * 5) % 18));
+    return {
+      id: `fan-p-${club.id}-${index + 1}`,
+      name: "",
+      countryId,
+      clubId: club.id,
+      position: ["ST", "LW", "RW", "AM", "CM", "DM", "CB", "GK"][index % 8],
+      age,
+      overall,
+      potential,
+      hiddenPotential: Math.min(96, potential + ((index % 5) - 1)),
+      value: Math.round((tier === 1 ? 2200000 : tier === 2 ? 760000 : 180000) * (1 + (overall - 55) / 28) / 10000) * 10000,
+      wage: Math.round((tier === 1 ? 14000 : tier === 2 ? 5200 : 1500) * (1 + (index % 4) * 0.13)),
+      form: 52 + ((index * 11) % 32),
+      morale: 50 + ((index * 13) % 30),
+      happiness: 50 + ((index * 17) % 30),
+      ego: 35 + ((index * 19) % 48),
+      loyalty: 35 + ((index * 23) % 50),
+      injuryRisk: 8 + ((index * 29) % 24),
+      growthRate: 35 + ((index * 31) % 55),
+      personality: ["professional", "loyal", "ambitious", "money", "media", "troubled"][index % 6],
+      story: tier >= 3 ? "Alt ligde kurgusal fan pack firsati." : "Acik lisansli fikstur evrenine bagli kurgusal oyuncu.",
+      represented: false,
+      scouted: tier >= 3 && index % 3 !== 0,
+      scoutConfidence: tier >= 3 ? 46 + (index % 26) : undefined,
+      generatedName: true
+    };
+  });
 }
 
 export function buildIdentityIndex({ players = [], clubs = [], coaches = [], competitions = [] } = {}) {
