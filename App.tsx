@@ -2905,6 +2905,10 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
     { label: "İtibar", target: "life" }
   ];
   const openTarget = (target) => {
+    if (target === "nextWeek") {
+      if (!simState && !pendingCards.length) onNextWeek();
+      return;
+    }
     if (target === "agenda") {
       openCardAgenda(priorityCards.slice(0, 3));
       return;
@@ -2933,6 +2937,11 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
   const activeFocusLocked = activeFocus.cost > 0 && career.money < activeFocus.cost;
   const storyContinue = buildHomeStoryContinue(career, myPlayers, tr);
   const coachNote = buildHomeCoachNote(career, myPlayers, pendingCards, talents);
+  const leadClient = [...myPlayers].sort((a, b) =>
+    (b.marketHeat || 0) + (b.agencyTrust || 0) + (b.goalProgress || 0) -
+    ((a.marketHeat || 0) + (a.agencyTrust || 0) + (a.goalProgress || 0))
+  )[0];
+  const leadPlanDone = !!leadClient && leadClient.planWeek === career.week;
   const advanceLabel = pendingCards.length ? `>> Kartları Çöz (${pendingCards.length})` : simState ? ">> Maç oynanıyor..." : ">> Sonraki Hafta";
   const mission = pendingCards.length
     ? { title: "Karar bekliyor", copy: "Hafta ilerlemeden önce kartları çöz. Her kartta kabul veya red seçmek zorundasın.", target: "agenda", cta: "Kartları Aç" }
@@ -2942,7 +2951,9 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
       ? { title: "İlk oyuncuyu bul", copy: "Radarında az aday var. Scout raporuna gir, düşük komisyonla ilk temsil sözleşmesini kovala.", target: "scout", cta: "Yeteneklere Git" }
       : (career.incomingOffers || []).length
         ? { title: "Masada teklif var", copy: "Komisyon, maaş ve kulüp ilişkisini aynı anda tart. Açgözlü hamle uzun vadeyi yakar.", target: "offer", cta: "Pazarlığa Gir" }
-        : { title: "Oyuncunu vitrine çıkar", copy: "İlk haftalarda büyük teklif bekleme. Form, güven ve medya görünürlüğü teklif ihtimalini artırır.", target: "players", cta: "Portföyü Yönet" };
+        : leadPlanDone
+          ? { title: "Plan hazır", copy: `${leadClient.name} için haftalık plan seçildi. Şimdi maç haftasına geç ve sonuçları gör.`, target: "nextWeek", cta: "Haftayı Oynat" }
+          : { title: "Oyuncunu vitrine çıkar", copy: "İlk haftalarda büyük teklif bekleme. Form, güven ve medya görünürlüğü teklif ihtimalini artırır.", target: "players", cta: "Portföyü Yönet" };
   const pressureCopy = `${story.title} · ${story.objective}`;
   const actionTiles = [
     { label: "Portföy", value: `${representedCount}/${agencyCapacity}`, icon: "P", target: "players" },
@@ -3156,6 +3167,13 @@ function FirstClientPlan({ career, players = [], onOpenPlayer, updateCareer, set
           <Text style={styles.clientPlanText} numberOfLines={1}>Sıradaki eşik: {next.label}. Oyuncuyu büyütmeden büyük komisyon gelmez.</Text>
         </View>
       </View>
+      {planAlreadyRun && (
+        <View style={styles.clientPlanStatus}>
+          <Text style={styles.clientPlanStatusText} numberOfLines={1}>
+            Aktif plan: {careerPlanLabel(lead.activeCareerPlan || "balanced")} · haftayı oynatınca maç etkisi gelir.
+          </Text>
+        </View>
+      )}
       <View style={styles.clientQuickPlanRow}>
         {quickPlans.map((plan) => {
           const locked = career.money < plan.cost || planAlreadyRun;
@@ -6205,6 +6223,8 @@ const styles = StyleSheet.create({
   clientPlanMain: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   clientPlanTitle: { color: "#f8fafc", fontSize: 12, fontWeight: "900" },
   clientPlanText: { color: "#cbd5e1", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 2 },
+  clientPlanStatus: { marginTop: 6, backgroundColor: "rgba(34,197,94,0.14)", borderColor: "rgba(134,239,172,0.24)", borderWidth: 1, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 4 },
+  clientPlanStatusText: { color: "#bbf7d0", fontSize: 9, lineHeight: 12, fontWeight: "900" },
   clientQuickPlanRow: { flexDirection: "row", gap: 5, marginTop: 7 },
   clientQuickPlanButton: { flex: 1, minHeight: 32, backgroundColor: "rgba(15,23,42,0.92)", borderColor: "rgba(125,211,252,0.20)", borderWidth: 1, borderRadius: 7, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
   clientQuickPlanRecommended: { backgroundColor: "#1f2d12", borderColor: "rgba(251,191,36,0.46)" },
