@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import {
   AD_PLACEMENTS,
+  buildAiNarratorProxyPayload,
+  buildGoogleCloudReadinessPlan,
   buildProfessionalReadinessReport,
   canShowAd,
   createCloudSyncAdapter,
   evaluateEconomyGuardrails,
   getEntitlementSnapshot,
   PRODUCT_CATALOG,
+  validateGoogleBackendConfig,
   validateRemoteConfig
 } from "../src/game/platformServices.js";
 import { createInitialCareer } from "../src/game/engine.js";
@@ -36,5 +39,17 @@ assert.equal(readiness.monetization.payToWinProducts, 0);
 assert.equal(createCloudSyncAdapter().resolveConflict({ savedAt: "a" }, { savedAt: "b" }).status, "needs-user-choice");
 assert.equal(validateRemoteConfig({ adsEnabled: true }).ok, true);
 assert.equal(validateRemoteConfig({ unsafeKey: true }).ok, false);
+
+const googlePlan = buildGoogleCloudReadinessPlan({ enabled: true, aiProvider: "gemini" });
+assert.equal(googlePlan.backend.runtime, "cloud-run");
+assert.equal(googlePlan.cloudSave.silentOverwrite, false);
+assert.ok(googlePlan.analytics.allowedEvents.includes("first_client_selected"));
+assert.equal(validateGoogleBackendConfig({ enabled: true, backendBaseUrl: "https://api.example.com", analyticsEnabled: false }).ok, true);
+assert.equal(validateGoogleBackendConfig({ enabled: true, backendBaseUrl: "http://api.example.com" }).ok, false);
+assert.equal(validateGoogleBackendConfig({ enabled: false, apiKeyInClient: true }).ok, false);
+
+const aiPayload = buildAiNarratorProxyPayload({ career, player: career.db.players[0], type: "season_recap" });
+assert.equal(aiPayload.outputRules.noOutcomeDecisions, true);
+assert.equal(aiPayload.providerHint, "gemini-or-openai-backend");
 
 console.log("platform service tests passed");
