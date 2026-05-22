@@ -3501,6 +3501,16 @@ function representationApproachPreview(pitch, approachId) {
   };
 }
 
+function scoutCandidateSummary(player = {}, pitch = {}) {
+  const upside = (player.hiddenPotential || player.potential || 0) - (player.overall || 0);
+  if ((pitch.chance || 0) >= 62 && upside >= 12) return { label: "Sıcak dosya", tone: "hot" };
+  if ((pitch.chance || 0) >= 60) return { label: "Masaya yakın", tone: "normal" };
+  if ((player.injuryRisk || 0) >= 24) return { label: "Sağlık riski", tone: "risk" };
+  if ((player.ego || 0) >= 68) return { label: "Ego dikkat", tone: "risk" };
+  if (upside >= 14) return { label: "Gizli tavan", tone: "hot" };
+  return { label: "Takip listesi", tone: "normal" };
+}
+
 function Players({ career, tr, selectedPlayerId, setSelectedPlayerId, selectedClubId, setOffer, setScreen, updateCareer, setDecisionFlash }) {
   const [marketView, setMarketView] = useState(() => getRepresentedPlayers(career).length ? "mine" : "available");
   const players = [...career.db.players].sort((a, b) => {
@@ -4063,14 +4073,25 @@ function Scout({ career, tr, updateCareer, setDecisionFlash }) {
           <Text style={styles.scoutPanelBadge}>{signable.length}</Text>
         </View>
         <Text style={styles.scoutPanelExplain}>Başlangıçta ajans kapasitesi {getRepresentedPlayers(career).length}/{getAgencyCapacity(career)}. Her oyuncu gelmez; saygınlık düşükken sadece radarındaki düşük profilli adaylar masaya oturur.</Text>
-        {signable.length ? signable.map(({ player, pitch }) => (
-          <View key={player.id} style={styles.scoutCandidateCard}>
+        {signable.length ? signable.map(({ player, pitch }) => {
+          const club = career.db.clubs.find((item) => item.id === player.clubId);
+          const summary = scoutCandidateSummary(player, pitch);
+          return (
+          <View key={player.id} style={[styles.scoutCandidateCard, summary.tone === "hot" && styles.scoutCandidateCardHot]}>
             <View style={styles.scoutCandidateRow}>
-              <PlayerPortrait player={player} size={42} />
+              <PlayerPortrait player={player} size={50} />
               <View style={styles.listMain}>
-                <Text style={styles.scoutCandidateName}>{player.name}</Text>
-                <Text style={styles.scoutCandidateMeta}>{player.position} · Pot {playerPotentialLabel(player)} · İlgi %{pitch.chance} · Komisyon %{pitch.commissionRate}</Text>
-                <Text style={styles.scoutCandidateMeta}>Temas: {formatMoney(pitch.signingFee)} · Ret masrafı {formatMoney(pitch.approachCost)}</Text>
+                <View style={styles.scoutCandidateTop}>
+                  <Text style={styles.scoutCandidateName} numberOfLines={1}>{player.name}</Text>
+                  <Text style={[styles.scoutCandidateTag, summary.tone === "hot" && styles.scoutCandidateTagHot]} numberOfLines={1}>{summary.label}</Text>
+                </View>
+                <Text style={styles.scoutCandidateMeta} numberOfLines={1}>{player.age} yaş · {player.position} · {club?.name || "Serbest"} · Pot {playerPotentialLabel(player)}</Text>
+                <View style={styles.scoutSignalRow}>
+                  <Text style={styles.scoutSignalChip} numberOfLines={1}>İlgi %{pitch.chance}</Text>
+                  <Text style={styles.scoutSignalChip} numberOfLines={1}>Kom. %{pitch.commissionRate}</Text>
+                  <Text style={styles.scoutSignalChip} numberOfLines={1}>Güven {player.loyalty ?? 55}</Text>
+                </View>
+                <Text style={styles.scoutCandidateMeta} numberOfLines={1}>Temas: {formatMoney(pitch.signingFee)} · Ret masrafı {formatMoney(pitch.approachCost)}</Text>
               </View>
             </View>
             <View style={styles.pitchChoiceRow}>
@@ -4099,7 +4120,8 @@ function Scout({ career, tr, updateCareer, setDecisionFlash }) {
               })}
             </View>
           </View>
-        )) : (
+        );
+        }) : (
           <Text style={styles.scoutEmptyText}>Şu an ajansa gelmek isteyen uygun aday yok. Scout gönder, haftalık planı Scout yap veya saygınlığı yükselt.</Text>
         )}
       </View>
@@ -7050,7 +7072,9 @@ const styles = StyleSheet.create({
   scoutPanelBadge: { color: "#052e16", backgroundColor: "#7dd3fc", borderRadius: 7, overflow: "hidden", paddingHorizontal: 8, paddingVertical: 3, fontSize: 10, fontWeight: "900" },
   scoutPanelExplain: { color: "#bae6fd", fontSize: 10, lineHeight: 14, fontWeight: "800", backgroundColor: "rgba(15,23,42,0.72)", borderColor: "rgba(125,211,252,0.14)", borderWidth: 1, borderRadius: 8, padding: 8 },
   scoutCandidateCard: { backgroundColor: "rgba(15,23,42,0.92)", borderColor: "rgba(148,163,184,0.16)", borderWidth: 1, borderRadius: 12, padding: 9, gap: 8 },
+  scoutCandidateCardHot: { borderColor: "rgba(251,191,36,0.34)", backgroundColor: "rgba(31,41,18,0.92)" },
   scoutCandidateRow: { flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: "rgba(15,23,42,0.92)", borderColor: "rgba(148,163,184,0.16)", borderWidth: 1, borderRadius: 12, padding: 9 },
+  scoutCandidateTop: { flexDirection: "row", alignItems: "center", gap: 6 },
   pitchChoiceRow: { flexDirection: "row", gap: 7 },
   pitchChoiceButton: { flex: 1, minHeight: 74, borderRadius: 8, backgroundColor: "#10251b", borderWidth: 1, borderColor: "rgba(134,239,172,0.28)", alignItems: "center", justifyContent: "center", paddingHorizontal: 5, paddingVertical: 6 },
   pitchChoiceRisk: { backgroundColor: "#261f12", borderColor: "rgba(251,191,36,0.36)" },
@@ -7059,7 +7083,11 @@ const styles = StyleSheet.create({
   pitchChoiceHint: { color: "#bbf7d0", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 2, textAlign: "center" },
   pitchChoiceFine: { color: "#94a3b8", fontSize: 8, lineHeight: 11, fontWeight: "800", marginTop: 1, textAlign: "center" },
   scoutCandidateName: { color: "#f8fafc", fontSize: 12, fontWeight: "900" },
+  scoutCandidateTag: { color: "#dbeafe", backgroundColor: "#334155", borderRadius: 7, overflow: "hidden", paddingHorizontal: 6, paddingVertical: 2, fontSize: 8, lineHeight: 10, fontWeight: "900", marginLeft: "auto" },
+  scoutCandidateTagHot: { color: "#111827", backgroundColor: "#fbbf24" },
   scoutCandidateMeta: { color: "#94a3b8", fontSize: 10, lineHeight: 14, fontWeight: "800", marginTop: 2 },
+  scoutSignalRow: { flexDirection: "row", gap: 4, marginTop: 4 },
+  scoutSignalChip: { flex: 1, color: "#bae6fd", backgroundColor: "rgba(8,47,73,0.54)", borderColor: "rgba(125,211,252,0.16)", borderWidth: 1, borderRadius: 6, overflow: "hidden", paddingHorizontal: 4, paddingVertical: 2, fontSize: 8, lineHeight: 10, fontWeight: "900", textAlign: "center" },
   scoutEmptyText: { color: "#cbd5e1", backgroundColor: "#0f172a", borderRadius: 8, padding: 10, fontSize: 11, lineHeight: 16, fontWeight: "800" },
   scoutJobRow: { backgroundColor: "#0f172a", borderColor: "rgba(148,163,184,0.18)", borderWidth: 1, borderRadius: 8, padding: 9, gap: 5 },
   portraitImageWrap: { overflow: "hidden", borderWidth: 1, borderColor: "rgba(125,211,252,0.24)", backgroundColor: "#0f172a", position: "relative" },
