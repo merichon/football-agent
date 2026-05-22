@@ -1466,6 +1466,61 @@ function SignalEqualizer({ bars = 5, tone = "green" }) {
   );
 }
 
+function PixelStoryCast({ scene = "door", agentName = "Agent" }) {
+  const legendX = scene === "office" ? 20 : scene === "street" ? 72 : 66;
+  const agentX = scene === "office" ? 66 : scene === "street" ? 22 : 24;
+  const assistantX = scene === "office" ? 46 : 86;
+  return (
+    <View pointerEvents="none" style={styles.pixelCastLayer}>
+      <MotiView
+        from={{ translateY: 0, scale: 1 }}
+        animate={{ translateY: [0, -3, 0], scale: [1, 1.015, 1] }}
+        transition={{ type: "timing", duration: 1200, loop: true }}
+        style={[styles.pixelActor, styles.pixelAgent, { left: `${agentX}%` }]}
+      >
+        <View style={styles.pixelHead} />
+        <View style={styles.pixelHair} />
+        <View style={styles.pixelSuit} />
+        <View style={styles.pixelTie} />
+        <Text style={styles.pixelActorTag} numberOfLines={1}>{agentName.slice(0, 8)}</Text>
+      </MotiView>
+      <MotiView
+        from={{ translateY: 1 }}
+        animate={{ translateY: [1, -2, 1] }}
+        transition={{ type: "timing", duration: 1500, loop: true, delay: 180 }}
+        style={[styles.pixelActor, styles.pixelLegend, { left: `${legendX}%` }]}
+      >
+        <View style={[styles.pixelHead, styles.pixelLegendHead]} />
+        <View style={styles.pixelLegendHair} />
+        <View style={styles.pixelLegendKit} />
+        <View style={styles.pixelGoldBoot} />
+        <Text style={styles.pixelActorTag}>C.R.7</Text>
+      </MotiView>
+      {scene !== "door" && (
+        <MotiView
+          from={{ opacity: 0.82, translateX: 0 }}
+          animate={{ opacity: [0.82, 1, 0.82], translateX: [0, 2, 0] }}
+          transition={{ type: "timing", duration: 900, loop: true }}
+          style={[styles.pixelActor, styles.pixelAssistant, { left: `${assistantX}%` }]}
+        >
+          <View style={[styles.pixelHead, styles.pixelAssistantHead]} />
+          <View style={styles.pixelAssistantSuit} />
+        </MotiView>
+      )}
+      {scene === "street" && (
+        <MotiView
+          from={{ opacity: 0.65, translateY: 4 }}
+          animate={{ opacity: [0.65, 1, 0.65], translateY: [4, -2, 4] }}
+          transition={{ type: "timing", duration: 760, loop: true }}
+          style={styles.pixelPhonePing}
+        >
+          <Text style={styles.pixelPhoneText}>1 mesaj</Text>
+        </MotiView>
+      )}
+    </View>
+  );
+}
+
 function SetupCareer({ career, tr, onComplete }) {
   const [step, setStep] = useState(career.prologueStep || 0);
   const [prologueChoice, setPrologueChoice] = useState(null);
@@ -1496,34 +1551,37 @@ function SetupCareer({ career, tr, onComplete }) {
     {
       kicker: "Kart 1 / 3",
       art: storySceneImages[0],
-      title: "C.R.7 kapısında",
-      text: `${career.agentName}, son parasını uçak biletine ve ucuz bir takım elbiseye gömüp C.R.7 lakaplı kurgusal futbol efsanesinin sezon öncesi kampına gelir. Randevu yoktur; sadece elinde ince bir dosya ve 'beni yeni ajansın yap' diyecek kadar cesaret vardır.`,
-      action: "Kapının önüne git",
+      scene: "door",
+      title: "Kapının önünde son para",
+      text: `${career.agentName}, cebindeki son parayı yol ve takım elbiseye gömer. Hedef büyük: C.R.7 lakaplı kurgusal efsanenin ajansı olmak. Sorun şu: randevu yok, portföy yok, sadece ince bir dosya var.`,
+      action: "Kapıyı zorla",
       choices: [
-        { label: "Güvenli konuş", hint: "Kendini sakin anlat" },
-        { label: "Cesur gir", hint: "Tüm paranı masaya koy" }
+        { label: "Sakin gir", hint: "Dosyayı düzgün sun" },
+        { label: "Parayı göster", hint: "Her şeyi masaya koy" }
       ]
     },
     {
       kicker: "Kart 2 / 3",
       art: storySceneImages[1],
-      title: "Beş dakikalık görüşme",
-      text: "Dosyaya bakarlar: temsil ettiğin oyuncu yok, kulüp referansı yok, banka hesabı zayıf. C.R.7 gülmez bile; asıl ağır olan bu olur. Ekibinden biri sadece şunu söyler: 'Yıldız oyuncu isteme. Önce bir kariyer kurtar.'",
-      action: "Cevap veremeden sus",
+      scene: "office",
+      title: "Oda soğuk, cevap kısa",
+      text: "Dosyaya bakarlar: temsil edilen oyuncu yok, kulüp referansı yok, kasada güç yok. Efsane gülmez bile. En ağır taraf bu olur. Asistan sadece şunu der: 'Yıldız isteme. Önce bir kariyer kurtar.'",
+      action: "Dersi yut",
       choices: [
         { label: "İtiraz et", hint: "Bir şans daha iste" },
-        { label: "Dersi al", hint: "Alt lige inmeyi kabul et" }
+        { label: "Sus ve dinle", hint: "Gerçeği kabul et" }
       ]
     },
     {
       kicker: "Kart 3 / 3",
       art: storySceneImages[2],
+      scene: "street",
       title: "Asansör sessiz iner",
-      text: "Odadan kovulmazsın; daha kötüsü olur, kibarca yok sayılırsın. Dışarıda telefonuna tek mesaj düşer: 'Üç tane 3. lig oyuncusu görüşmeye razı. Biriyle başla, sonra tekrar kapıları zorlarsın.'",
+      text: "Kovulmazsın; daha kötüsü olur, kibarca yok sayılırsın. Dışarı çıkınca telefon titrer: 'Üç 3. lig oyuncusu görüşmeye razı. Birini büyüt, sonra kapıları tekrar zorlarsın.'",
       action: "Mesajı aç",
       choices: [
-        { label: "Mesaja dön", hint: "İlk oyuncuyu bul" },
-        { label: "Bir kez daha ara", hint: "Telefon yine kapanır" }
+        { label: "Mesaja dön", hint: "İlk müşteriyi bul" },
+        { label: "Tekrar ara", hint: "Telefon yine kapanır" }
       ]
     }
   ];
@@ -1541,8 +1599,14 @@ function SetupCareer({ career, tr, onComplete }) {
           <AtmosphereDashes count={16} tone={step === 1 ? "gold" : "blue"} />
           <AnimatedEdgeLines tone={step === 2 ? "green" : "gold"} />
           <Text style={styles.prologueKicker}>{card.kicker}</Text>
+          <View style={styles.prologueFilmDots}>
+            {prologueCards.map((_, index) => <View key={index} style={[styles.prologueFilmDot, index === step && styles.prologueFilmDotActive]} />)}
+          </View>
           <ImageBackground source={card.art} style={styles.prologueArt} imageStyle={styles.prologueArtImage}>
             <View style={styles.prologueArtShade} />
+            <View style={styles.prologueLetterboxTop} />
+            <View style={styles.prologueLetterboxBottom} />
+            <PixelStoryCast scene={card.scene} agentName={career.agentName} />
             <MotiView from={{ translateY: 0 }} animate={{ translateY: [-2, 4, -2] }} transition={{ type: "timing", duration: 1300, loop: true }} style={styles.prologueArtBadge}>
               <Text style={styles.prologueArtBadgeText}>{step === 0 ? "Kapı" : step === 1 ? "Red" : "3 Aday"}</Text>
             </MotiView>
@@ -6265,13 +6329,36 @@ const styles = StyleSheet.create({
   prologueScreen: { minHeight: 600, borderRadius: 14, borderWidth: 1, borderColor: "rgba(251,191,36,0.28)", padding: 14, overflow: "hidden", justifyContent: "space-between" },
   prologueGlow: { position: "absolute", right: -70, top: -60, width: 230, height: 230, borderRadius: 230, backgroundColor: "rgba(251,191,36,0.18)" },
   prologueKicker: { color: "#fbbf24", fontSize: 11, fontWeight: "900", zIndex: 2 },
+  prologueFilmDots: { flexDirection: "row", gap: 5, marginTop: 8, zIndex: 2 },
+  prologueFilmDot: { flex: 1, height: 4, borderRadius: 6, backgroundColor: "rgba(148,163,184,0.28)" },
+  prologueFilmDotActive: { backgroundColor: "#fbbf24" },
   prologueArt: { minHeight: 238, borderRadius: 14, overflow: "hidden", marginTop: 10, borderWidth: 1, borderColor: "rgba(251,191,36,0.24)", justifyContent: "flex-end", zIndex: 2 },
   prologueArtImage: { borderRadius: 14, resizeMode: "cover" },
-  prologueArtShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(2,6,23,0.16)" },
-  prologueArtBadge: { alignSelf: "flex-start", margin: 10, borderRadius: 9, backgroundColor: "#fbbf24", paddingHorizontal: 10, paddingVertical: 5 },
+  prologueArtShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(2,6,23,0.28)" },
+  prologueLetterboxTop: { position: "absolute", left: 0, right: 0, top: 0, height: 22, backgroundColor: "rgba(2,6,23,0.72)", zIndex: 2 },
+  prologueLetterboxBottom: { position: "absolute", left: 0, right: 0, bottom: 0, height: 24, backgroundColor: "rgba(2,6,23,0.72)", zIndex: 2 },
+  prologueArtBadge: { alignSelf: "flex-start", margin: 10, borderRadius: 9, backgroundColor: "#fbbf24", paddingHorizontal: 10, paddingVertical: 5, zIndex: 5 },
   prologueArtBadgeText: { color: "#111827", fontSize: 11, fontWeight: "900" },
   prologueStage: { minHeight: 260, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-around", zIndex: 2 },
   ronaldoBadge: { position: "absolute", top: 52, alignSelf: "center", color: "#111827", fontSize: 11, fontWeight: "900" },
+  pixelCastLayer: { ...StyleSheet.absoluteFillObject, zIndex: 3 },
+  pixelActor: { position: "absolute", bottom: 24, width: 42, height: 88, alignItems: "center" },
+  pixelAgent: { transform: [{ translateX: -18 }] },
+  pixelLegend: { width: 52, height: 100, transform: [{ translateX: -20 }] },
+  pixelAssistant: { bottom: 28, width: 34, height: 74, opacity: 0.95 },
+  pixelHead: { width: 22, height: 24, borderRadius: 6, backgroundColor: "#d6a16f", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },
+  pixelHair: { position: "absolute", top: 1, width: 24, height: 8, borderRadius: 3, backgroundColor: "#111827" },
+  pixelSuit: { marginTop: -1, width: 34, height: 42, borderRadius: 5, backgroundColor: "#0f172a", borderWidth: 1, borderColor: "rgba(125,211,252,0.24)" },
+  pixelTie: { position: "absolute", top: 27, width: 5, height: 20, backgroundColor: "#fbbf24", borderRadius: 2 },
+  pixelLegendHead: { width: 26, height: 27, backgroundColor: "#e0b47a" },
+  pixelLegendHair: { position: "absolute", top: 0, width: 28, height: 8, borderRadius: 3, backgroundColor: "#2b1708" },
+  pixelLegendKit: { marginTop: -1, width: 42, height: 48, borderRadius: 6, backgroundColor: "#f8fafc", borderWidth: 2, borderColor: "#fbbf24" },
+  pixelGoldBoot: { position: "absolute", bottom: 16, width: 34, height: 6, borderRadius: 6, backgroundColor: "#fbbf24" },
+  pixelAssistantHead: { width: 19, height: 21, backgroundColor: "#c9895c" },
+  pixelAssistantSuit: { marginTop: -1, width: 30, height: 38, borderRadius: 5, backgroundColor: "#1e293b", borderWidth: 1, borderColor: "rgba(148,163,184,0.34)" },
+  pixelActorTag: { marginTop: 3, color: "#111827", backgroundColor: "rgba(251,191,36,0.92)", borderRadius: 5, overflow: "hidden", paddingHorizontal: 4, paddingVertical: 1, fontSize: 7, lineHeight: 9, fontWeight: "900", maxWidth: 54, textAlign: "center" },
+  pixelPhonePing: { position: "absolute", right: 20, top: 38, borderRadius: 8, backgroundColor: "#fbbf24", paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: "#fde68a" },
+  pixelPhoneText: { color: "#111827", fontSize: 9, fontWeight: "900" },
   prologueCard: { position: "relative", overflow: "hidden", backgroundColor: "rgba(8,17,29,0.94)", borderColor: "rgba(125,211,252,0.22)", borderWidth: 1, borderRadius: 16, padding: 14, zIndex: 2 },
   prologueTitle: { color: "#ffffff", fontSize: 22, lineHeight: 28, fontWeight: "900" },
   prologueText: { color: "#dbeafe", fontSize: 13, lineHeight: 19, fontWeight: "800", marginTop: 8 },
