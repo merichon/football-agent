@@ -4611,6 +4611,13 @@ function CardPopup({ card, career, tr, remaining, onDecision, onAgenda }) {
   const weeksLeft = Math.max(0, (card.expiresWeek || career.week + 1) - career.week);
   const artwork = cardArtworkFor(card);
   const beat = cardStoryBeat(card, tr);
+  const acceptScore = cardDecisionScore(card.accept);
+  const declineScore = cardDecisionScore(card.decline);
+  const preferredDecision = acceptScore >= declineScore ? "accept" : "decline";
+  const decisionOptions = [
+    { id: "accept", label: tr("accept"), sub: "Fırsatı sahiplen", effect: card.accept, tone: "good" },
+    { id: "decline", label: tr("decline"), sub: "Riski kapat", effect: card.decline, tone: "warn" }
+  ];
   return (
     <Modal transparent visible={!!card} animationType="fade" onRequestClose={() => {}}>
       <View style={styles.modalBackdrop}>
@@ -4678,21 +4685,31 @@ function CardPopup({ card, career, tr, remaining, onDecision, onAgenda }) {
           </View>
 
           <View style={styles.modalEffects}>
-            <Text style={styles.effectGood}>Kabul: {effectSummary(card.accept)}</Text>
-            <Text style={styles.effectBad}>Red: {effectSummary(card.decline)}</Text>
-          </View>
-
-          <View style={styles.modalActions}>
-            {[
-              { id: "accept", label: tr("accept"), style: styles.goodButton, text: styles.actionText },
-              { id: "decline", label: tr("decline"), style: styles.warnButton, text: styles.actionText }
-            ].map((item, index) => (
-              <MotiView key={item.id} from={{ opacity: 0, translateY: 10 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: "timing", duration: 220, delay: 120 + index * 70 }} style={styles.modalActionMotion}>
-                <TouchableOpacity style={item.style} onPress={() => onDecision(item.id)}>
-                  <Text style={item.text}>{item.label}</Text>
-                </TouchableOpacity>
-              </MotiView>
-            ))}
+            <Text style={styles.cardDecisionHeader}>Karar etkisi</Text>
+            <View style={styles.cardDecisionGrid}>
+              {decisionOptions.map((item, index) => (
+                <MotiView key={item.id} from={{ opacity: 0, translateY: 10 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: "timing", duration: 220, delay: 120 + index * 70 }} style={styles.cardDecisionMotion}>
+                  <TouchableOpacity
+                    activeOpacity={0.86}
+                    style={[styles.cardDecisionChoice, item.tone === "good" ? styles.cardDecisionGood : styles.cardDecisionWarn, preferredDecision === item.id && styles.cardDecisionPreferred]}
+                    onPress={() => onDecision(item.id)}
+                  >
+                    <View style={styles.cardDecisionTop}>
+                      <Text style={styles.cardDecisionLabel}>{item.label}</Text>
+                      {preferredDecision === item.id && <Text style={styles.cardDecisionTag}>uzun vade</Text>}
+                    </View>
+                    <Text style={styles.cardDecisionSub}>{item.sub}</Text>
+                    <View style={styles.cardDecisionPills}>
+                      {effectPillItems(item.effect).map((pill) => (
+                        <Text key={pill.label} style={[styles.cardDecisionPill, pill.tone === "good" && styles.cardDecisionPillGood, pill.tone === "bad" && styles.cardDecisionPillBad, pill.tone === "cost" && styles.cardDecisionPillCost]} numberOfLines={1}>
+                          {pill.label}
+                        </Text>
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                </MotiView>
+              ))}
+            </View>
           </View>
         </MotiView>
       </View>
@@ -4820,6 +4837,27 @@ function effectSummary(effect = {}) {
   if (effect.relation) parts.push(`İlişki ${effect.relation > 0 ? "+" : ""}${effect.relation}`);
   if (effect.scoutBoost) parts.push(`Scout ${effect.scoutBoost > 0 ? "+" : ""}${effect.scoutBoost}`);
   return parts.length ? parts.join(" · ") : "Etki yok";
+}
+
+function cardDecisionScore(effect = {}) {
+  const moneyScore = Math.max(-10, Math.min(10, (effect.money || 0) / 25000));
+  return moneyScore
+    + (effect.reputation || 0) * 5
+    + (effect.morale || 0) * 2
+    + (effect.relation || 0) * 2
+    + (effect.scoutBoost || 0) * 3
+    + (effect.ethics || 0) * 4;
+}
+
+function effectPillItems(effect = {}) {
+  const items = [];
+  if (effect.money) items.push({ label: `${effect.money > 0 ? "+" : "-"}${formatMoney(Math.abs(effect.money))}`, tone: effect.money > 0 ? "good" : "cost" });
+  if (effect.reputation) items.push({ label: `Rep ${effect.reputation > 0 ? "+" : ""}${effect.reputation}`, tone: effect.reputation > 0 ? "good" : "bad" });
+  if (effect.morale) items.push({ label: `Moral ${effect.morale > 0 ? "+" : ""}${effect.morale}`, tone: effect.morale > 0 ? "good" : "bad" });
+  if (effect.relation) items.push({ label: `İlişki ${effect.relation > 0 ? "+" : ""}${effect.relation}`, tone: effect.relation > 0 ? "good" : "bad" });
+  if (effect.scoutBoost) items.push({ label: `Scout ${effect.scoutBoost > 0 ? "+" : ""}${effect.scoutBoost}`, tone: effect.scoutBoost > 0 ? "good" : "bad" });
+  if (effect.ethics) items.push({ label: `Etik ${effect.ethics > 0 ? "+" : ""}${effect.ethics}`, tone: effect.ethics > 0 ? "good" : "bad" });
+  return items.length ? items : [{ label: "Net etki yok", tone: "neutral" }];
 }
 
 function Negotiation({ career, tr, offer, player, club, updateCareer, setOffer, setScreen, setDecisionFlash }) {
@@ -6691,6 +6729,22 @@ const styles = StyleSheet.create({
   cardClock: { flexDirection: "row", gap: 6, marginTop: 9 },
   cardClockTick: { flex: 1, height: 5, borderRadius: 8, backgroundColor: "#fbbf24" },
   modalEffects: { gap: 6, marginTop: 9 },
+  cardDecisionHeader: { color: "#f8fafc", fontSize: 11, lineHeight: 14, fontWeight: "900" },
+  cardDecisionGrid: { flexDirection: "row", gap: 7 },
+  cardDecisionMotion: { flex: 1, minWidth: 0 },
+  cardDecisionChoice: { minHeight: 88, borderRadius: 9, borderWidth: 1, padding: 8, justifyContent: "space-between" },
+  cardDecisionGood: { backgroundColor: "rgba(20,83,45,0.82)", borderColor: "rgba(134,239,172,0.34)" },
+  cardDecisionWarn: { backgroundColor: "rgba(63,45,18,0.86)", borderColor: "rgba(251,146,60,0.34)" },
+  cardDecisionPreferred: { borderColor: "#fbbf24", shadowColor: "#fbbf24", shadowOpacity: 0.18, shadowRadius: 9, shadowOffset: { width: 0, height: 4 } },
+  cardDecisionTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 4 },
+  cardDecisionLabel: { color: "#ffffff", fontSize: 12, lineHeight: 15, fontWeight: "900" },
+  cardDecisionTag: { color: "#111827", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 5, paddingVertical: 2, fontSize: 8, lineHeight: 10, fontWeight: "900" },
+  cardDecisionSub: { color: "#dbeafe", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 3 },
+  cardDecisionPills: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 6 },
+  cardDecisionPill: { color: "#cbd5e1", backgroundColor: "rgba(15,23,42,0.68)", borderRadius: 6, overflow: "hidden", paddingHorizontal: 5, paddingVertical: 2, fontSize: 8, lineHeight: 10, fontWeight: "900" },
+  cardDecisionPillGood: { color: "#bbf7d0", backgroundColor: "rgba(20,83,45,0.72)" },
+  cardDecisionPillBad: { color: "#fed7aa", backgroundColor: "rgba(124,45,18,0.72)" },
+  cardDecisionPillCost: { color: "#fde68a", backgroundColor: "rgba(113,63,18,0.76)" },
   modalActions: { flexDirection: "row", gap: 8, marginTop: 11, flexWrap: "wrap" },
   modalActionMotion: { flexGrow: 1, minWidth: 96 },
   modalAgendaButton: { marginTop: 10, borderRadius: 8, borderWidth: 1, borderColor: "#64748b", paddingVertical: 10, alignItems: "center" },
