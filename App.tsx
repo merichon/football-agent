@@ -1727,6 +1727,20 @@ function SetupCareer({ career, tr, onComplete }) {
           <Image source={storySceneImages[2]} style={styles.prospectIntroArt} />
           <AnimatedEdgeLines tone="gold" />
           <PremiumSheen delay={200} color="rgba(251,191,36,0.16)" />
+          <View style={styles.prospectBillboard}>
+            {thirdLeagueCandidates.map((player, index) => (
+              <MotiView
+                key={`billboard-${player.id}`}
+                from={{ opacity: 0, translateY: 10 }}
+                animate={{ opacity: 1, translateY: [0, -3, 0] }}
+                transition={{ type: "timing", duration: 900 + index * 120, delay: index * 90, loop: true }}
+                style={styles.prospectBillboardSlot}
+              >
+                <PlayerPortrait player={player} size={48} />
+                <Text style={styles.prospectBillboardNumber}>#{index + 1}</Text>
+              </MotiView>
+            ))}
+          </View>
           <Text style={styles.setupKicker}>Kırılmadan sonraki ilk hamle</Text>
           <RevealWords text="İlk kaderini seç" textStyle={styles.setupTitle} />
           <Text style={styles.setupCopy}>C.R.7 kapısı kapandı. Bu üç oyuncudan biri ilk referansın olacak. Yanlış seçim aylar kaybettirir; doğru seçim ajansının adını ilk kez duyurur.</Text>
@@ -1737,19 +1751,26 @@ function SetupCareer({ career, tr, onComplete }) {
           const hook = prologuePlayerHook(player, index);
           return (
             <MotiView key={player.id} from={{ opacity: 0, translateY: 18 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: "timing", duration: 280, delay: index * 80 }}>
-              <View style={styles.prospectChoice}>
+              <View style={[styles.prospectChoice, index === 0 && styles.prospectChoicePrime]}>
                 <PremiumSheen delay={index * 220} color="rgba(125,211,252,0.12)" />
-                <PlayerPortrait player={player} size={58} />
+                <View style={styles.prospectPortraitWrap}>
+                  <PlayerPortrait player={player} size={66} />
+                  <Text style={styles.prospectRankBadge}>#{index + 1}</Text>
+                </View>
                 <View style={styles.listMain}>
                   <Text style={styles.prospectHook}>{hook.title}</Text>
                   <Text style={styles.cardTitle}>{player.name}</Text>
                   <Text style={styles.muted}>{player.position} · {club?.name || "Serbest"} · Pot {playerPotentialLabel(player)}</Text>
-                  <Text style={styles.aiModelText}>AI Scout {player.scoutAIScore ?? 40} · Etki {player.impactScore ?? 45} · Komisyon %3</Text>
+                  <View style={styles.prospectSignalRow}>
+                    <Text style={styles.prospectSignalChip}>Scout {player.scoutAIScore ?? 40}</Text>
+                    <Text style={styles.prospectSignalChip}>Etki {player.impactScore ?? 45}</Text>
+                    <Text style={styles.prospectSignalChip}>Kom. %3</Text>
+                  </View>
                   <Text style={styles.storyText}>{hook.text}</Text>
                   <Text style={styles.prospectRisk}>{hook.risk}</Text>
                 </View>
                 <TouchableOpacity style={styles.prospectPickButton} onPress={() => onComplete(league?.id || defaultLeague, player.id)}>
-                  <Text style={styles.prospectPick}>Seç</Text>
+                  <Text style={styles.prospectPick}>İmzala</Text>
                 </TouchableOpacity>
               </View>
             </MotiView>
@@ -6465,12 +6486,20 @@ const styles = StyleSheet.create({
   prologueChoiceHint: { color: "#9fb3c8", fontSize: 9, lineHeight: 12, fontWeight: "800", textAlign: "center", marginTop: 3 },
   prologueButton: { backgroundColor: "#fbbf24", borderRadius: 12, paddingVertical: 13, alignItems: "center", marginTop: 14 },
   prologueButtonText: { color: "#111827", fontSize: 14, fontWeight: "900" },
-  prospectIntro: { position: "relative", overflow: "hidden", backgroundColor: "#101827", borderColor: "rgba(251,191,36,0.28)", borderWidth: 1, borderRadius: 16, padding: 16, paddingTop: 118, marginBottom: 12 },
-  prospectIntroArt: { position: "absolute", left: 0, right: 0, top: 0, width: "100%", height: 118, opacity: 0.42 },
+  prospectIntro: { position: "relative", overflow: "hidden", backgroundColor: "#101827", borderColor: "rgba(251,191,36,0.28)", borderWidth: 1, borderRadius: 16, padding: 16, paddingTop: 154, marginBottom: 12 },
+  prospectIntroArt: { position: "absolute", left: 0, right: 0, top: 0, width: "100%", height: 154, opacity: 0.42 },
+  prospectBillboard: { position: "absolute", left: 16, right: 16, top: 36, flexDirection: "row", justifyContent: "center", gap: 12, zIndex: 3 },
+  prospectBillboardSlot: { width: 60, height: 70, borderRadius: 12, backgroundColor: "rgba(8,17,29,0.82)", borderColor: "rgba(251,191,36,0.28)", borderWidth: 1, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  prospectBillboardNumber: { position: "absolute", right: 4, bottom: 4, color: "#111827", backgroundColor: "#fbbf24", borderRadius: 5, overflow: "hidden", paddingHorizontal: 4, paddingVertical: 1, fontSize: 8, fontWeight: "900" },
   prospectChoice: { position: "relative", overflow: "hidden", flexDirection: "row", gap: 10, alignItems: "center", backgroundColor: "#111827", borderColor: "rgba(125,211,252,0.22)", borderWidth: 1, borderRadius: 14, padding: 10, marginBottom: 10 },
+  prospectChoicePrime: { borderColor: "rgba(251,191,36,0.42)", backgroundColor: "rgba(31,41,18,0.88)" },
+  prospectPortraitWrap: { position: "relative" },
+  prospectRankBadge: { position: "absolute", left: -3, bottom: -3, color: "#111827", backgroundColor: "#fbbf24", borderRadius: 6, overflow: "hidden", paddingHorizontal: 5, paddingVertical: 2, fontSize: 8, fontWeight: "900" },
   prospectHook: { color: "#fbbf24", fontSize: 11, lineHeight: 15, fontWeight: "900", marginBottom: 2 },
+  prospectSignalRow: { flexDirection: "row", gap: 4, marginTop: 5 },
+  prospectSignalChip: { flex: 1, color: "#bae6fd", backgroundColor: "rgba(8,47,73,0.54)", borderColor: "rgba(125,211,252,0.16)", borderWidth: 1, borderRadius: 6, overflow: "hidden", paddingHorizontal: 4, paddingVertical: 2, fontSize: 8, lineHeight: 10, fontWeight: "900", textAlign: "center" },
   prospectRisk: { color: "#fed7aa", fontSize: 10, lineHeight: 14, fontWeight: "900", marginTop: 5 },
-  prospectPickButton: { alignSelf: "stretch", minWidth: 48, borderRadius: 9, backgroundColor: "#86efac", alignItems: "center", justifyContent: "center", paddingHorizontal: 8 },
+  prospectPickButton: { alignSelf: "stretch", minWidth: 58, borderRadius: 9, backgroundColor: "#86efac", alignItems: "center", justifyContent: "center", paddingHorizontal: 8 },
   prospectPick: { color: "#111827", fontSize: 11, fontWeight: "900" },
   reportHero: { backgroundColor: "#101827", borderColor: "rgba(251,191,36,0.28)", borderWidth: 1, borderRadius: 8, padding: 16, marginBottom: 12 },
   reportKicker: { color: "#fbbf24", fontSize: 11, fontWeight: "900" },
