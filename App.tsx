@@ -385,6 +385,20 @@ function createWebGameAudio() {
       tone(base, 0.12, 0.055, "triangle");
       tone(base * 1.5, 0.11, 0.035, "sine", 0.08);
       tone(base * 2, 0.16, 0.025, "triangle", 0.18);
+    },
+    story: async (scene = "door") => {
+      await ensure();
+      const base = scene === "office" ? 196 : scene === "street" ? 329.63 : 261.63;
+      const color = scene === "office" ? "sawtooth" : scene === "street" ? "triangle" : "sine";
+      tone(base, 0.3, 0.038, color);
+      tone(base * 1.5, 0.2, 0.026, "triangle", 0.16);
+      tone(base * 2, 0.14, 0.018, "sine", 0.34);
+    },
+    signature: async () => {
+      await ensure();
+      tone(880, 0.055, 0.045, "triangle");
+      tone(1760, 0.045, 0.025, "sine", 0.06);
+      tone(220, 0.18, 0.052, "square", 0.15);
     }
   };
 }
@@ -869,6 +883,16 @@ export default function App() {
     getAudioEngine()?.card?.(card.source, card.severity);
   }
 
+  function playStorySound(scene) {
+    if (!soundOn) return;
+    getAudioEngine()?.story?.(scene);
+  }
+
+  function playSignatureSound() {
+    if (!soundOn) return;
+    getAudioEngine()?.signature?.();
+  }
+
   function playTapSound() {
     if (!soundOn) return;
     getAudioEngine()?.tap?.();
@@ -1267,7 +1291,7 @@ function resolveActiveCard(decision) {
   if (!career.setupComplete) {
     return (
       <Shell>
-        <SetupCareer career={career} tr={tr} onComplete={completeCareerSetup} />
+        <SetupCareer career={career} tr={tr} onComplete={completeCareerSetup} onStorySound={playStorySound} onSignatureSound={playSignatureSound} />
       </Shell>
     );
   }
@@ -1606,7 +1630,7 @@ function PrologueCinemaCast({ scene = "door", agentName = "Agent" }) {
   );
 }
 
-function SetupCareer({ career, tr, onComplete }) {
+function SetupCareer({ career, tr, onComplete, onStorySound, onSignatureSound }) {
   const [step, setStep] = useState(career.prologueStep || 0);
   const [prologueChoice, setPrologueChoice] = useState(null);
   const defaultLeague = career.db.leagues?.find((league) => league.tier === 3)?.id || career.db.leagues?.[0]?.id;
@@ -1670,6 +1694,12 @@ function SetupCareer({ career, tr, onComplete }) {
       ]
     }
   ];
+
+  useEffect(() => {
+    if (step < prologueCards.length) {
+      onStorySound?.(prologueCards[step]?.scene);
+    }
+  }, [step]);
 
   if (step < prologueCards.length) {
     const card = prologueCards[step];
@@ -1769,7 +1799,10 @@ function SetupCareer({ career, tr, onComplete }) {
                   <Text style={styles.storyText}>{hook.text}</Text>
                   <Text style={styles.prospectRisk}>{hook.risk}</Text>
                 </View>
-                <TouchableOpacity style={styles.prospectPickButton} onPress={() => onComplete(league?.id || defaultLeague, player.id)}>
+                <TouchableOpacity style={styles.prospectPickButton} onPress={() => {
+                  onSignatureSound?.();
+                  onComplete(league?.id || defaultLeague, player.id);
+                }}>
                   <Text style={styles.prospectPick}>İmzala</Text>
                 </TouchableOpacity>
               </View>
