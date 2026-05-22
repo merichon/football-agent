@@ -3193,6 +3193,19 @@ function FirstClientPlan({ career, players = [], onOpenPlayer, updateCareer, set
     { label: "Vitrin", value: goal, target: 60, tone: goal >= 60 ? "good" : "warn" }
   ];
   const next = steps.find((item) => item.value < item.target) || { label: "Teklif", value: 100, target: 100 };
+  const upside = (lead.hiddenPotential || lead.potential || 0) - (lead.overall || 0);
+  const riskLabel = (lead.injuryRisk || 0) >= 24
+    ? "Sakatlık riski"
+    : (lead.ego || 0) >= 68
+      ? "Ego baskısı"
+      : (lead.loyalty || 55) < 45
+        ? "Sadakat düşük"
+        : "Kontrollü risk";
+  const upsideLabel = upside >= 14
+    ? "Gizli tavan"
+    : (lead.growthRate || 0) >= 68
+      ? "Hızlı gelişir"
+      : "Sabır ister";
   const quickPlans = [
     { id: "care", label: "Güven", cost: 12000, effect: "+6 güven" },
     { id: "showcase", label: "Vitrin", cost: 18000, effect: "+18 piyasa" },
@@ -3206,10 +3219,20 @@ function FirstClientPlan({ career, players = [], onOpenPlayer, updateCareer, set
         <Text style={styles.clientPlanBadge}>W{career.week}</Text>
       </View>
       <View style={styles.clientPlanMain}>
-        <PlayerPortrait player={lead} size={42} />
+        <PlayerPortrait player={lead} size={54} />
         <View style={styles.listMain}>
-          <Text style={styles.clientPlanTitle} numberOfLines={1}>{lead.name}</Text>
-          <Text style={styles.clientPlanText} numberOfLines={1}>Sıradaki eşik: {next.label}. Oyuncuyu büyütmeden büyük komisyon gelmez.</Text>
+          <View style={styles.clientPlanNameRow}>
+            <Text style={styles.clientPlanTitle} numberOfLines={1}>{lead.name}</Text>
+            <Text style={styles.clientPlanValue} numberOfLines={1}>{formatMoney(lead.value || 0)}</Text>
+          </View>
+          <Text style={styles.clientPlanText} numberOfLines={1}>
+            {lead.age} yaş · {personalityLabel(lead.personality)} · Sıradaki eşik: {next.label}
+          </Text>
+          <View style={styles.clientPlanChipRow}>
+            <Text style={[styles.clientPlanMiniChip, styles.clientPlanMiniChipGold]} numberOfLines={1}>{upsideLabel}</Text>
+            <Text style={styles.clientPlanMiniChip} numberOfLines={1}>{riskLabel}</Text>
+            <Text style={styles.clientPlanMiniChip} numberOfLines={1}>Kom. %{lead.agencyCommissionRate || 4}</Text>
+          </View>
         </View>
       </View>
       {planAlreadyRun && (
@@ -6395,8 +6418,13 @@ const styles = StyleSheet.create({
   clientPlanKicker: { color: "#7dd3fc", fontSize: 9, fontWeight: "900" },
   clientPlanBadge: { color: "#07111f", backgroundColor: "#7dd3fc", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 9, fontWeight: "900" },
   clientPlanMain: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+  clientPlanNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   clientPlanTitle: { color: "#f8fafc", fontSize: 12, fontWeight: "900" },
+  clientPlanValue: { color: "#fbbf24", fontSize: 9, fontWeight: "900", marginLeft: "auto" },
   clientPlanText: { color: "#cbd5e1", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 2 },
+  clientPlanChipRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 },
+  clientPlanMiniChip: { maxWidth: "34%", color: "#c7d2fe", backgroundColor: "rgba(30,41,59,0.92)", borderColor: "rgba(125,211,252,0.18)", borderWidth: 1, borderRadius: 7, overflow: "hidden", paddingHorizontal: 5, paddingVertical: 2, fontSize: 8, lineHeight: 10, fontWeight: "900" },
+  clientPlanMiniChipGold: { color: "#111827", backgroundColor: "#fbbf24", borderColor: "rgba(254,243,199,0.6)" },
   clientPlanStatus: { marginTop: 6, backgroundColor: "rgba(34,197,94,0.14)", borderColor: "rgba(134,239,172,0.24)", borderWidth: 1, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 4 },
   clientPlanStatusText: { color: "#bbf7d0", fontSize: 9, lineHeight: 12, fontWeight: "900" },
   clientQuickPlanRow: { flexDirection: "row", gap: 5, marginTop: 7 },
