@@ -4029,6 +4029,16 @@ function Life({ career, tr, updateCareer, setDecisionFlash }) {
 
 const reputationActions = [
   {
+    id: "street-reference",
+    title: "Mahalle Referansı",
+    description: "Eski bir antrenör ve iki yerel muhabirle konuş; ilk ajans ismini duyurur.",
+    minReputation: 10,
+    reputationCost: 1,
+    moneyCost: 4000,
+    relationBoost: 1,
+    mediaPower: 1
+  },
+  {
     id: "local-credibility",
     title: "Yerel Güven Turu",
     description: "Alt lig kulüplerine kendini tanıt; küçük ama gerçek kapı açar.",
@@ -4037,6 +4047,16 @@ const reputationActions = [
     moneyCost: 8000,
     relationBoost: 1,
     scoutBoost: 1
+  },
+  {
+    id: "trial-day",
+    title: "Deneme Günü Ayarla",
+    description: "Bir alt lig antrenman gününe gir; düşük profilli oyuncu dosyası açabilir.",
+    minReputation: 20,
+    reputationCost: 2,
+    moneyCost: 10000,
+    scoutBoost: 2,
+    revealPlayers: 1
   },
   {
     id: "club-intro",
@@ -4187,31 +4207,53 @@ function AchievementsPanel({ career }) {
 }
 
 function ReputationActionsPanel({ career, updateCareer, setDecisionFlash }) {
+  const usedAnyThisWeek = (career.reputationSpendLog || []).some((log) => log.week === career.week);
+  const nextUsable = reputationActions.find((item) =>
+    career.reputation >= item.minReputation &&
+    career.money >= item.moneyCost &&
+    career.reputation >= item.reputationCost &&
+    !(career.reputationSpendLog || []).some((log) => log.id === item.id && log.week === career.week)
+  );
   return (
     <View style={styles.reputationPanel}>
       <View style={styles.objectiveHeader}>
         <View>
           <Text style={styles.objectiveTitle}>Saygınlık Hamleleri</Text>
-          <Text style={styles.objectiveHint}>Saygınlık artık harcanan bir güç; sadece puan değil.</Text>
+          <Text style={styles.objectiveHint}>Haftada 1 hamle. Saygınlık kapı açar ama harcanınca baskı yaratır.</Text>
         </View>
         <Text style={styles.reputationBadge}>{career.reputation}</Text>
+      </View>
+      <View style={styles.reputationNextMove}>
+        <Text style={styles.reputationNextKicker}>{usedAnyThisWeek ? "Bu hafta hamle yapıldı" : "Önerilen hamle"}</Text>
+        <Text style={styles.reputationNextText} numberOfLines={2}>
+          {usedAnyThisWeek
+            ? "Yeni saygınlık hamlesi için haftayı ilerlet. Aynı hafta zincirleme harcama ekonomiyi bozmaz."
+            : nextUsable
+              ? `${nextUsable.title}: ${nextUsable.description}`
+              : "Şimdilik para veya saygınlık yetmiyor. Oyuncu planı, kart kararı ve maç haftasıyla güç biriktir."}
+        </Text>
       </View>
       {reputationActions.map((item) => {
         const locked = career.reputation < item.minReputation;
         const poor = career.money < item.moneyCost || career.reputation < item.reputationCost;
         const usedThisWeek = (career.reputationSpendLog || []).some((log) => log.id === item.id && log.week === career.week);
+        const weekLocked = usedAnyThisWeek && !usedThisWeek;
         return (
-          <View key={item.id} style={styles.reputationActionRow}>
+          <View key={item.id} style={[styles.reputationActionRow, weekLocked && styles.reputationActionMuted]}>
             <View style={styles.listMain}>
               <Text style={styles.cardTitle}>{item.title}</Text>
               <Text style={styles.muted}>{item.description}</Text>
               <Text style={styles.valueText}>Rep -{item.reputationCost} · {formatMoney(item.moneyCost)} · Kilit {item.minReputation}</Text>
             </View>
             <TouchableOpacity
-              style={[styles.smallButton, (locked || poor || usedThisWeek) && styles.disabledButton]}
+              style={[styles.smallButton, (locked || poor || usedThisWeek || weekLocked) && styles.disabledButton]}
               onPress={() => {
                 if (usedThisWeek) {
                   setDecisionFlash?.({ title: "Bu hafta kullanıldı", summary: `${item.title} etkisi bu hafta zaten masada. Haftayı ilerletince tekrar değerlendir.`, tone: "delay" });
+                  return;
+                }
+                if (weekLocked) {
+                  setDecisionFlash?.({ title: "Haftalık limit", summary: "Saygınlık hamleleri haftada bir kez yapılır. Önce haftanın sonucunu gör.", tone: "delay" });
                   return;
                 }
                 if (locked) {
@@ -4226,7 +4268,7 @@ function ReputationActionsPanel({ career, updateCareer, setDecisionFlash }) {
                 setDecisionFlash?.({ title: "Saygınlık harcandı", summary: `${item.title} ajansa kalıcı avantaj verdi.`, tone: "accept" });
               }}
             >
-              <Text style={styles.smallButtonText}>{usedThisWeek ? "Bu Hafta" : locked ? "Kilitli" : "Kullan"}</Text>
+              <Text style={styles.smallButtonText}>{usedThisWeek ? "Bu Hafta" : weekLocked ? "Hafta Sonu" : locked ? "Kilitli" : "Kullan"}</Text>
             </TouchableOpacity>
           </View>
         );
@@ -6394,7 +6436,11 @@ const styles = StyleSheet.create({
   reputationMilestoneNote: { color: "#94a3b8", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 5 },
   reputationPanel: { backgroundColor: "#0d2119", borderColor: "rgba(134,239,172,0.28)", borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, shadowColor: "#22c55e", shadowOpacity: 0.12, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
   reputationBadge: { minWidth: 36, textAlign: "center", color: "#052e16", backgroundColor: "#86efac", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 12, fontWeight: "900", overflow: "hidden" },
+  reputationNextMove: { backgroundColor: "#101827", borderColor: "rgba(251,191,36,0.26)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7, marginBottom: 8 },
+  reputationNextKicker: { color: "#fbbf24", fontSize: 10, lineHeight: 13, fontWeight: "900" },
+  reputationNextText: { color: "#dbeafe", fontSize: 10, lineHeight: 14, fontWeight: "800", marginTop: 2 },
   reputationActionRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#0f172a", borderColor: "rgba(134,239,172,0.18)", borderWidth: 1, borderRadius: 8, padding: 9, marginTop: 7 },
+  reputationActionMuted: { opacity: 0.58 },
   intelPanel: { backgroundColor: "#151d2b", borderColor: "rgba(148,163,184,0.28)", borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 12, shadowColor: "#94a3b8", shadowOpacity: 0.1, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } },
   intelHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   intelTitle: { color: "#f8fafc", fontSize: 16, fontWeight: "900" },
