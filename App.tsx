@@ -2135,6 +2135,7 @@ function buildWeekReport(previousCareer, nextCareer, preview, popupCards = []) {
       const statsAfter = player.seasonStats || {};
       return {
         id: player.id,
+        player,
         name: player.name,
         position: player.position,
         valueDelta: (player.value || 0) - (before.value || player.value || 0),
@@ -2147,7 +2148,14 @@ function buildWeekReport(previousCareer, nextCareer, preview, popupCards = []) {
         activeCareerPlan: player.activeCareerPlan || null,
         goalsDelta: (statsAfter.goals || 0) - (statsBefore.goals || 0),
         shotsDelta: (statsAfter.shots || 0) - (statsBefore.shots || 0),
-        highlightsDelta: (statsAfter.highlights || 0) - (statsBefore.highlights || 0)
+        highlightsDelta: (statsAfter.highlights || 0) - (statsBefore.highlights || 0),
+        impactLabel: playerWeekImpactLabel({
+          goalsDelta: (statsAfter.goals || 0) - (statsBefore.goals || 0),
+          highlightsDelta: (statsAfter.highlights || 0) - (statsBefore.highlights || 0),
+          marketHeatDelta: (player.marketHeat || 0) - (before.marketHeat || 0),
+          trustDelta: (player.agencyTrust || 0) - (before.agencyTrust || player.agencyTrust || 0),
+          valueDelta: (player.value || 0) - (before.value || player.value || 0)
+        })
       };
     })
     .sort((a, b) => Math.abs(b.goalDelta) + Math.abs(b.valueDelta / 50000) + b.highlightsDelta - (Math.abs(a.goalDelta) + Math.abs(a.valueDelta / 50000) + a.highlightsDelta))
@@ -2205,6 +2213,16 @@ function buildWeekReport(previousCareer, nextCareer, preview, popupCards = []) {
     nextAction,
     popupCards
   };
+}
+
+function playerWeekImpactLabel(change = {}) {
+  if ((change.goalsDelta || 0) > 0) return "Gol vitrini";
+  if ((change.highlightsDelta || 0) >= 2) return "Maçta görünür";
+  if ((change.marketHeatDelta || 0) > 8) return "Piyasa ısındı";
+  if ((change.valueDelta || 0) > 50000) return "Değer arttı";
+  if ((change.trustDelta || 0) > 3) return "Güven kazandı";
+  if ((change.trustDelta || 0) < -3) return "Güven riski";
+  return "Takipte";
 }
 
 function WeekReportModal({ report, onClose }) {
@@ -2288,13 +2306,19 @@ function WeekReportModal({ report, onClose }) {
               <View style={styles.weekReportPlayerGrid}>
                 {reportPlayers.map((item) => (
                   <View key={item.id} style={styles.weekReportPlayerRow}>
-                    <Text style={styles.weekReportPlayerName} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.weekReportPlayerMeta} numberOfLines={1}>
-                      F {formatSignedNumber(item.formDelta)} · Gvn {formatSignedNumber(item.trustDelta)} · Hdf {formatSignedNumber(item.goalDelta)}
-                    </Text>
-                    <Text style={styles.weekReportPlayerMeta} numberOfLines={1}>
-                      {formatSignedMoney(item.valueDelta)} · Gol +{item.goalsDelta} · Aks +{item.highlightsDelta}
-                    </Text>
+                    <PlayerPortrait player={item.player} size={36} />
+                    <View style={styles.weekReportPlayerText}>
+                      <View style={styles.weekReportPlayerTop}>
+                        <Text style={styles.weekReportPlayerName} numberOfLines={1}>{item.name}</Text>
+                        <Text style={styles.weekReportPlayerTag} numberOfLines={1}>{item.impactLabel}</Text>
+                      </View>
+                      <Text style={styles.weekReportPlayerMeta} numberOfLines={1}>
+                        {formatSignedMoney(item.valueDelta)} · Gol +{item.goalsDelta} · Aks +{item.highlightsDelta}
+                      </Text>
+                      <Text style={styles.weekReportPlayerMeta} numberOfLines={1}>
+                        Form {formatSignedNumber(item.formDelta)} · Güven {formatSignedNumber(item.trustDelta)} · Hedef {formatSignedNumber(item.goalDelta)}
+                      </Text>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -6238,9 +6262,12 @@ const styles = StyleSheet.create({
   weekReportAchievementRow: { backgroundColor: "#111827", borderRadius: 7, paddingHorizontal: 7, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(251,191,36,0.22)" },
   weekReportAchievementTitle: { color: "#f8fafc", fontSize: 10, lineHeight: 13, fontWeight: "900" },
   weekReportAchievementReward: { color: "#fbbf24", fontSize: 9, lineHeight: 12, fontWeight: "900", marginTop: 1 },
-  weekReportPlayerGrid: { flexDirection: "row", flexWrap: "wrap", gap: 5 },
-  weekReportPlayerRow: { flexGrow: 1, flexBasis: "48%", minHeight: 50, backgroundColor: "#111827", borderRadius: 7, paddingHorizontal: 6, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(134,239,172,0.12)" },
+  weekReportPlayerGrid: { gap: 5 },
+  weekReportPlayerRow: { minHeight: 54, flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "#111827", borderRadius: 7, paddingHorizontal: 6, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(134,239,172,0.12)" },
+  weekReportPlayerText: { flex: 1, minWidth: 0 },
+  weekReportPlayerTop: { flexDirection: "row", alignItems: "center", gap: 5 },
   weekReportPlayerName: { color: "#f8fafc", fontSize: 10, lineHeight: 13, fontWeight: "900" },
+  weekReportPlayerTag: { color: "#111827", backgroundColor: "#86efac", borderRadius: 6, overflow: "hidden", paddingHorizontal: 5, paddingVertical: 1, fontSize: 8, lineHeight: 10, fontWeight: "900", marginLeft: "auto" },
   weekReportPlayerMeta: { color: "#cbd5e1", fontSize: 8, lineHeight: 11, fontWeight: "800", marginTop: 1 },
   weekReportPlanSection: { borderColor: "rgba(125,211,252,0.30)", backgroundColor: "rgba(8,47,73,0.34)" },
   weekReportPlanRow: { backgroundColor: "#101827", borderRadius: 7, paddingHorizontal: 7, paddingVertical: 5, borderWidth: 1, borderColor: "rgba(125,211,252,0.20)" },
