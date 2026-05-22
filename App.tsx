@@ -1555,6 +1555,57 @@ function CardStoryCast({ source = "player", severity = "normal" }) {
   );
 }
 
+function PrologueCinemaCast({ scene = "door", agentName = "Agent" }) {
+  const sceneCopy = {
+    door: {
+      left: agentName,
+      right: "C.R.7",
+      caption: "Randevusuz geldin. Güvenlik çizgisi, kariyerinin ilk duvarı.",
+      leftImage: portraitLibrary[1],
+      rightImage: portraitLibrary[9]
+    },
+    office: {
+      left: "C.R.7",
+      right: agentName,
+      caption: "Dosya masaya düşer. Odadaki sessizlik, reddin kendisi olur.",
+      leftImage: portraitLibrary[9],
+      rightImage: portraitLibrary[2]
+    },
+    street: {
+      left: agentName,
+      right: "3 aday",
+      caption: "Telefon titrer. Büyük kapı kapanır; alt ligden ilk yol açılır.",
+      leftImage: portraitLibrary[1],
+      rightImage: portraitLibrary[14]
+    }
+  }[scene] || {};
+  return (
+    <View pointerEvents="none" style={styles.prologueCinemaLayer}>
+      <MotiView
+        from={{ opacity: 0, translateX: -12, translateY: 8 }}
+        animate={{ opacity: 1, translateX: 0, translateY: [0, -3, 0] }}
+        transition={{ type: "timing", duration: 980, loop: true }}
+        style={[styles.prologueCharacterCard, styles.prologueCharacterLeft]}
+      >
+        <Image source={sceneCopy.leftImage} style={styles.prologueCharacterImage} />
+        <Text style={styles.prologueCharacterLabel} numberOfLines={1}>{sceneCopy.left}</Text>
+      </MotiView>
+      <MotiView
+        from={{ opacity: 0, translateX: 12, translateY: 8 }}
+        animate={{ opacity: 1, translateX: 0, translateY: [0, -2, 0] }}
+        transition={{ type: "timing", duration: 1180, loop: true, delay: 120 }}
+        style={[styles.prologueCharacterCard, styles.prologueCharacterRight]}
+      >
+        <Image source={sceneCopy.rightImage} style={styles.prologueCharacterImage} />
+        <Text style={styles.prologueCharacterLabel} numberOfLines={1}>{sceneCopy.right}</Text>
+      </MotiView>
+      <View style={styles.prologueSubtitle}>
+        <Text style={styles.prologueSubtitleText} numberOfLines={2}>{sceneCopy.caption}</Text>
+      </View>
+    </View>
+  );
+}
+
 function SetupCareer({ career, tr, onComplete }) {
   const [step, setStep] = useState(career.prologueStep || 0);
   const [prologueChoice, setPrologueChoice] = useState(null);
@@ -1641,6 +1692,7 @@ function SetupCareer({ career, tr, onComplete }) {
             <View style={styles.prologueLetterboxTop} />
             <View style={styles.prologueLetterboxBottom} />
             <PixelStoryCast scene={card.scene} agentName={career.agentName} />
+            <PrologueCinemaCast scene={card.scene} agentName={career.agentName} />
             <MotiView from={{ translateY: 0 }} animate={{ translateY: [-2, 4, -2] }} transition={{ type: "timing", duration: 1300, loop: true }} style={styles.prologueArtBadge}>
               <Text style={styles.prologueArtBadgeText}>{step === 0 ? "Kapı" : step === 1 ? "Red" : "3 Aday"}</Text>
             </MotiView>
@@ -6367,7 +6419,7 @@ const styles = StyleSheet.create({
   prologueFilmDots: { flexDirection: "row", gap: 5, marginTop: 8, zIndex: 2 },
   prologueFilmDot: { flex: 1, height: 4, borderRadius: 6, backgroundColor: "rgba(148,163,184,0.28)" },
   prologueFilmDotActive: { backgroundColor: "#fbbf24" },
-  prologueArt: { minHeight: 238, borderRadius: 14, overflow: "hidden", marginTop: 10, borderWidth: 1, borderColor: "rgba(251,191,36,0.24)", justifyContent: "flex-end", zIndex: 2 },
+  prologueArt: { minHeight: 268, borderRadius: 14, overflow: "hidden", marginTop: 10, borderWidth: 1, borderColor: "rgba(251,191,36,0.24)", justifyContent: "flex-end", zIndex: 2 },
   prologueArtImage: { borderRadius: 14, resizeMode: "cover" },
   prologueArtShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(2,6,23,0.28)" },
   prologueLetterboxTop: { position: "absolute", left: 0, right: 0, top: 0, height: 22, backgroundColor: "rgba(2,6,23,0.72)", zIndex: 2 },
@@ -6394,6 +6446,14 @@ const styles = StyleSheet.create({
   pixelActorTag: { marginTop: 3, color: "#111827", backgroundColor: "rgba(251,191,36,0.92)", borderRadius: 5, overflow: "hidden", paddingHorizontal: 4, paddingVertical: 1, fontSize: 7, lineHeight: 9, fontWeight: "900", maxWidth: 54, textAlign: "center" },
   pixelPhonePing: { position: "absolute", right: 20, top: 38, borderRadius: 8, backgroundColor: "#fbbf24", paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: "#fde68a" },
   pixelPhoneText: { color: "#111827", fontSize: 9, fontWeight: "900" },
+  prologueCinemaLayer: { ...StyleSheet.absoluteFillObject, zIndex: 4 },
+  prologueCharacterCard: { position: "absolute", bottom: 34, width: 86, height: 118, borderRadius: 12, overflow: "hidden", backgroundColor: "rgba(8,17,29,0.88)", borderWidth: 1, borderColor: "rgba(251,191,36,0.34)", shadowColor: "#000000", shadowOpacity: 0.32, shadowRadius: 10, shadowOffset: { width: 0, height: 6 } },
+  prologueCharacterLeft: { left: 16 },
+  prologueCharacterRight: { right: 16 },
+  prologueCharacterImage: { width: "100%", height: 94, resizeMode: "cover" },
+  prologueCharacterLabel: { color: "#111827", backgroundColor: "#fbbf24", fontSize: 9, lineHeight: 12, fontWeight: "900", textAlign: "center", paddingVertical: 4, paddingHorizontal: 3 },
+  prologueSubtitle: { position: "absolute", left: 16, right: 16, bottom: 6, minHeight: 30, borderRadius: 9, backgroundColor: "rgba(2,6,23,0.78)", borderWidth: 1, borderColor: "rgba(251,191,36,0.24)", alignItems: "center", justifyContent: "center", paddingHorizontal: 9 },
+  prologueSubtitleText: { color: "#fef3c7", fontSize: 10, lineHeight: 13, fontWeight: "900", textAlign: "center" },
   prologueCard: { position: "relative", overflow: "hidden", backgroundColor: "rgba(8,17,29,0.94)", borderColor: "rgba(125,211,252,0.22)", borderWidth: 1, borderRadius: 16, padding: 14, zIndex: 2 },
   prologueTitle: { color: "#ffffff", fontSize: 22, lineHeight: 28, fontWeight: "900" },
   prologueText: { color: "#dbeafe", fontSize: 13, lineHeight: 19, fontWeight: "800", marginTop: 8 },
