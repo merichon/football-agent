@@ -259,7 +259,7 @@ export const eventDeck = [
 export const empireUpgrades = [
   {
     id: "scout-department",
-    title: "Scout Departmani",
+    title: "Scout Departmanı",
     cost: 220000,
     reputation: 3,
     scoutBoost: 10,
@@ -282,7 +282,7 @@ export const empireUpgrades = [
     reputation: 4,
     scoutBoost: 14,
     income: 7000,
-    description: "Gizli potansiyelli oyunculari daha erken yakalamaya yardim eder."
+    description: "Gizli potansiyelli oyuncuları daha erken yakalamaya yardım eder."
   },
   {
     id: "club-shares",
@@ -296,7 +296,7 @@ export const empireUpgrades = [
 ];
 
 export const staffCandidates = [
-  { id: "chief-scout", name: "Chief Scout", cost: 85000, weeklyCost: 6000, scoutBoost: 12, description: "Scout rapor kalitesini belirgin artirir." },
+  { id: "chief-scout", name: "Chief Scout", cost: 85000, weeklyCost: 6000, scoutBoost: 12, description: "Scout rapor kalitesini belirgin artırır." },
   { id: "lawyer", name: "Contract Lawyer", cost: 70000, weeklyCost: 5000, negotiation: 9, description: "Pazarlık ve sözleşme görüşmelerinde avantaj sağlar." },
   { id: "pr-manager", name: "PR Manager", cost: 65000, weeklyCost: 4500, reputation: 5, description: "Medya krizlerini ve sponsor görüşmelerini güçlendirir." }
 ];

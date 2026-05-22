@@ -4138,6 +4138,14 @@ function ReputationMilestonePanel({ career }) {
       note: reputation >= 35 ? "Rapor riski azaldı" : "Rep 35 raporları netleştirir"
     }
   ];
+  const ladder = [
+    { rep: 10, label: "Yerel ad", detail: "İlk network hamlesi" },
+    { rep: 18, label: "Slot", detail: "+1 portföy yolu" },
+    { rep: 28, label: "Pazar", detail: "Dış ligler açılır" },
+    { rep: 35, label: "Sponsor", detail: "Raporlar netleşir" },
+    { rep: 52, label: "Elit masa", detail: "Büyük kulüp kapısı" }
+  ];
+  const nextGate = ladder.find((item) => reputation < item.rep) || ladder[ladder.length - 1];
   return (
     <View style={styles.reputationMilestonePanel}>
       <View style={styles.reputationMilestoneTop}>
@@ -4146,6 +4154,27 @@ function ReputationMilestonePanel({ career }) {
           <Text style={styles.reputationMilestoneCopy}>Her puan; kapasite, komisyon, scout güveni ve pazar erişimini büyütür.</Text>
         </View>
         <Text style={styles.reputationMilestoneBadge}>{reputation}</Text>
+      </View>
+      <View style={styles.reputationLadder}>
+        <View style={styles.reputationLadderHeader}>
+          <Text style={styles.reputationLadderTitle}>Yol Haritası</Text>
+          <Text style={styles.reputationLadderNext}>Sıradaki: Rep {nextGate.rep} · {nextGate.label}</Text>
+        </View>
+        <View style={styles.reputationLadderTrack}>
+          <View style={[styles.reputationLadderFill, { width: `${Math.min(100, Math.max(4, reputation))}%` }]} />
+        </View>
+        <View style={styles.reputationLadderSteps}>
+          {ladder.map((item) => {
+            const unlocked = reputation >= item.rep;
+            return (
+              <View key={item.rep} style={[styles.reputationLadderStep, unlocked && styles.reputationLadderStepOpen]}>
+                <Text style={styles.reputationLadderRep}>{item.rep}</Text>
+                <Text style={styles.reputationLadderLabel} numberOfLines={1}>{item.label}</Text>
+                <Text style={styles.reputationLadderDetail} numberOfLines={1}>{item.detail}</Text>
+              </View>
+            );
+          })}
+        </View>
       </View>
       <View style={styles.reputationMilestoneGrid}>
         {milestones.map((item) => {
@@ -6425,6 +6454,18 @@ const styles = StyleSheet.create({
   reputationMilestoneTitle: { color: "#f8fafc", fontSize: 16, fontWeight: "900" },
   reputationMilestoneCopy: { color: "#b6c6d8", fontSize: 11, lineHeight: 15, fontWeight: "800", marginTop: 2 },
   reputationMilestoneBadge: { minWidth: 38, textAlign: "center", color: "#06131f", backgroundColor: "#7dd3fc", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, fontSize: 13, fontWeight: "900", overflow: "hidden" },
+  reputationLadder: { backgroundColor: "rgba(15,23,42,0.76)", borderColor: "rgba(251,191,36,0.26)", borderWidth: 1, borderRadius: 8, padding: 8, marginBottom: 9 },
+  reputationLadderHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  reputationLadderTitle: { color: "#fbbf24", fontSize: 10, lineHeight: 13, fontWeight: "900" },
+  reputationLadderNext: { flex: 1, color: "#dbeafe", fontSize: 9, lineHeight: 12, fontWeight: "900", textAlign: "right" },
+  reputationLadderTrack: { height: 6, backgroundColor: "#07120d", borderRadius: 8, overflow: "hidden", marginTop: 7 },
+  reputationLadderFill: { height: "100%", backgroundColor: "#fbbf24" },
+  reputationLadderSteps: { flexDirection: "row", gap: 5, marginTop: 7 },
+  reputationLadderStep: { flex: 1, minWidth: 0, borderRadius: 7, backgroundColor: "#111827", borderColor: "rgba(148,163,184,0.16)", borderWidth: 1, paddingHorizontal: 4, paddingVertical: 5, alignItems: "center" },
+  reputationLadderStepOpen: { backgroundColor: "#12351f", borderColor: "rgba(134,239,172,0.34)" },
+  reputationLadderRep: { color: "#fbbf24", fontSize: 10, lineHeight: 12, fontWeight: "900" },
+  reputationLadderLabel: { color: "#f8fafc", fontSize: 8, lineHeight: 10, fontWeight: "900", marginTop: 2, textAlign: "center" },
+  reputationLadderDetail: { color: "#94a3b8", fontSize: 7, lineHeight: 9, fontWeight: "800", marginTop: 1, textAlign: "center" },
   reputationMilestoneGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   reputationMilestoneItem: { width: "48.7%", minHeight: 73, backgroundColor: "#0f172a", borderColor: "rgba(125,211,252,0.16)", borderWidth: 1, borderRadius: 8, padding: 8, justifyContent: "space-between" },
   reputationMilestoneItemUnlocked: { backgroundColor: "#12351f", borderColor: "rgba(134,239,172,0.28)" },
