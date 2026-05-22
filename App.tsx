@@ -2946,6 +2946,22 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
   ];
   const activeFocus = focusOptions.find((item) => item.id === (career.weeklyFocus || "balanced")) || focusOptions[0];
   const activeFocusLocked = activeFocus.cost > 0 && career.money < activeFocus.cost;
+  const chooseFocus = (item) => {
+    if (simState) {
+      setDecisionFlash?.({ title: "Maç haftası başladı", summary: "Planı değiştirmek için maç haftasının bitmesini bekle.", tone: "delay" });
+      return;
+    }
+    if (item.cost > 0 && career.money < item.cost) {
+      setDecisionFlash?.({ title: "Bütçe yetmiyor", summary: `${item.label} planı için ${formatMoney(item.cost)} gerekiyor.`, tone: "decline" });
+      return;
+    }
+    updateCareer({ ...career, weeklyFocus: item.id });
+    setDecisionFlash?.({
+      title: "Hafta planı seçildi",
+      summary: `${item.label}: ${item.hint}. Sonraki hafta simülasyonunda etkisi görünür.`,
+      tone: "accept"
+    });
+  };
   const coachNote = buildHomeCoachNote(career, myPlayers, pendingCards, talents);
   const leadClient = [...myPlayers].sort((a, b) =>
     (b.marketHeat || 0) + (b.agencyTrust || 0) + (b.goalProgress || 0) -
@@ -3053,6 +3069,28 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
             </View>
           </TouchableOpacity>
         ))}
+      </View>
+
+      <View style={styles.homeWeekPlanPanel}>
+        <View style={styles.homeWeekPlanTop}>
+          <Text style={styles.homeWeekPlanTitle}>Hafta stratejisi</Text>
+          <Text style={styles.homeWeekPlanBadge}>{activeFocus.label}</Text>
+        </View>
+        <View style={styles.homeWeekPlanRow}>
+          {focusOptions.map((item) => {
+            const selected = item.id === activeFocus.id;
+            const locked = item.cost > 0 && career.money < item.cost;
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.homeWeekPlanChip, selected && styles.homeWeekPlanChipActive, locked && styles.homeWeekPlanChipLocked]}
+                onPress={() => chooseFocus(item)}
+              >
+                <Text style={[styles.homeWeekPlanChipText, selected && styles.homeWeekPlanChipTextActive, locked && styles.homeWeekPlanChipTextLocked]} numberOfLines={1}>{item.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       <View style={styles.homeFocusCompact}>
@@ -6316,6 +6354,17 @@ const styles = StyleSheet.create({
   homeCommandTextBlock: { flex: 1, minWidth: 0 },
   homeCommandLabel: { color: "#f8fafc", fontSize: 9, lineHeight: 12, fontWeight: "900" },
   homeCommandValue: { color: "#9bdcaa", fontSize: 8, lineHeight: 10, fontWeight: "900", marginTop: 1 },
+  homeWeekPlanPanel: { backgroundColor: "rgba(8,17,29,0.86)", borderColor: "rgba(251,191,36,0.24)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 6, marginBottom: 5, zIndex: 2 },
+  homeWeekPlanTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 5 },
+  homeWeekPlanTitle: { color: "#fbbf24", fontSize: 9, lineHeight: 12, fontWeight: "900" },
+  homeWeekPlanBadge: { color: "#07111f", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 8, lineHeight: 10, fontWeight: "900" },
+  homeWeekPlanRow: { flexDirection: "row", gap: 4 },
+  homeWeekPlanChip: { flex: 1, minHeight: 25, borderRadius: 7, backgroundColor: "rgba(15,23,42,0.92)", borderColor: "rgba(125,211,252,0.18)", borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 2 },
+  homeWeekPlanChipActive: { backgroundColor: "#f59e0b", borderColor: "#fbbf24" },
+  homeWeekPlanChipLocked: { opacity: 0.45 },
+  homeWeekPlanChipText: { color: "#dbeafe", fontSize: 8, lineHeight: 10, fontWeight: "900", textAlign: "center" },
+  homeWeekPlanChipTextActive: { color: "#111827" },
+  homeWeekPlanChipTextLocked: { color: "#94a3b8" },
   homeNavGridClean: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 2, marginBottom: 6, zIndex: 2 },
   homeNavButtonClean: { width: "48.8%", minHeight: 38, borderRadius: 8, backgroundColor: "rgba(226,232,240,0.94)", borderColor: "rgba(15,23,42,0.18)", borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 },
   homeNavLabelClean: { color: "#0f172a", fontSize: 11, lineHeight: 14, fontWeight: "900", textAlign: "center" },
