@@ -2207,15 +2207,15 @@ function WeekReportModal({ report, onClose }) {
     ...(report.completedAchievements || []).map((item) => ({ ...item, kind: "Başarım" })),
     ...(report.completedObjectives || []).map((item) => ({ ...item, kind: "Hedef" }))
   ].slice(0, 2);
-  const reportPlayers = (report.playerChanges || []).slice(0, 3);
-  const planResults = (report.playerChanges || []).filter((item) => item.activeCareerPlan).slice(0, 2);
-  const matchNotes = (report.matchHighlights || []).slice(-2);
+  const reportPlayers = (report.playerChanges || []).slice(0, 2);
+  const planResults = (report.playerChanges || []).filter((item) => item.activeCareerPlan).slice(0, 1);
+  const matchNotes = (report.matchHighlights || []).slice(-1);
   const compactNotes = [
     `Scout +${report.discovered}`,
     `Kart ${report.cards}`,
     report.bestPlayerName ? `${report.bestPlayerName}: ${formatSignedMoney(report.bestPlayerValueDelta)}` : null,
     report.noOfferReason ? report.noOfferReason : null
-  ].filter(Boolean).slice(0, 3);
+  ].filter(Boolean).slice(0, 2);
   return (
     <Modal transparent animationType="fade" visible>
       <View style={styles.reportOverlay}>
@@ -2964,17 +2964,13 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         : leadPlanDone
           ? { title: "Plan hazır", copy: `${leadClient.name} için haftalık plan seçildi. Şimdi maç haftasına geç ve sonuçları gör.`, target: "nextWeek", cta: "Haftayı Oynat" }
           : { title: "Oyuncunu vitrine çıkar", copy: "İlk haftalarda büyük teklif bekleme. Form, güven ve medya görünürlüğü teklif ihtimalini artırır.", target: "players", cta: "Portföyü Yönet" };
-  const actionTiles = [
+  const commandActions = [
     { label: "Portföy", value: `${representedCount}/${agencyCapacity}`, icon: "P", target: "players" },
-    { label: "Yetenek", value: talents, icon: "T", target: "scout" },
-    { label: "Teklif", value: career.incomingOffers?.length || 0, icon: "M", target: (career.incomingOffers?.length || 0) ? "offer" : "players" },
-    { label: "Ajans", value: career.reputation, icon: "A", target: "empire" }
-  ];
-  const navActions = [
-    { label: "Oyuncular", sub: `${representedCount}/${agencyCapacity}`, target: "players" },
-    { label: "Scout", sub: `${talents} aday`, target: "scout" },
-    { label: "Kulüpler", sub: "Pazar", target: "clubs" },
-    { label: "Ajans", sub: `${career.reputation} rep`, target: "empire" }
+    { label: "Scout", value: `${talents}`, icon: "S", target: "scout" },
+    { label: "Teklif", value: career.incomingOffers?.length || 0, icon: "T", target: (career.incomingOffers?.length || 0) ? "offer" : "players" },
+    { label: "Kulüpler", value: "Pazar", icon: "K", target: "clubs" },
+    { label: "Ajans", value: career.reputation, icon: "A", target: "empire" },
+    { label: pendingCards.length ? "Kart" : "Gündem", value: pendingCards.length || career.news?.length || 0, icon: "!", target: pendingCards.length ? "agenda" : "inbox" }
   ];
   return (
     <ImageBackground source={stadiumImage} style={styles.homeBoard} imageStyle={styles.homeBoardImage}>
@@ -3031,16 +3027,6 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         />
       )}
 
-      <View style={styles.homeMetricRowClean}>
-        {actionTiles.map(({ label, value, icon, target }) => (
-          <TouchableOpacity key={label} style={styles.homeMetricCardClean} onPress={() => openTarget(target)}>
-            <Text style={styles.homeMetricIcon}>{icon}</Text>
-            <Text style={styles.homeMetricValue} numberOfLines={1}>{value}</Text>
-            <Text style={styles.homeMetricLabel} numberOfLines={1}>{label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
       {inDebt && (
         <TouchableOpacity style={[styles.cashPressureBar, inDebt && styles.cashPressureBarDebt]} onPress={() => openTarget("empire")}>
           <Text style={styles.cashPressureKicker}>{inDebt ? "Kasa alarmı" : "Kasa zayıf"}</Text>
@@ -3057,11 +3043,14 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         </View>
       )}
 
-      <View style={styles.homeNavGridClean}>
-        {navActions.map((item) => (
-          <TouchableOpacity key={item.label} style={styles.homeNavButtonClean} onPress={() => openTarget(item.target)}>
-            <Text style={styles.homeNavLabelClean}>{item.label}</Text>
-            <Text style={styles.homeNavSubClean}>{item.sub}</Text>
+      <View style={styles.homeCommandGrid}>
+        {commandActions.map((item) => (
+          <TouchableOpacity key={item.label} style={[styles.homeCommandButton, item.target === "agenda" && styles.homeCommandButtonAlert]} onPress={() => openTarget(item.target)}>
+            <Text style={styles.homeCommandIcon}>{item.icon}</Text>
+            <View style={styles.homeCommandTextBlock}>
+              <Text style={styles.homeCommandLabel} numberOfLines={1}>{item.label}</Text>
+              <Text style={styles.homeCommandValue} numberOfLines={1}>{item.value}</Text>
+            </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -3070,9 +3059,6 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         <Text style={[styles.focusHint, styles.focusHintClean, activeFocusLocked && styles.focusHintDanger]}>
           Hafta planı: {activeFocusLocked ? `${activeFocus.label} kilitli` : `${activeFocus.label} · ${activeFocus.hint}`}
         </Text>
-        <TouchableOpacity style={styles.homeMiniAgendaButton} onPress={() => openTarget(pendingCards.length ? "agenda" : "inbox")}>
-          <Text style={styles.homeMiniAgendaText}>Kart {pendingCards.length}</Text>
-        </TouchableOpacity>
       </View>
       <MotiView from={{ scale: 1 }} animate={{ scale: simState ? 1 : 1.025 }} transition={{ type: "timing", duration: 850, loop: true }}>
         <TouchableOpacity
@@ -6252,6 +6238,13 @@ const styles = StyleSheet.create({
   homeMetricIcon: { color: "#7dd3fc", fontSize: 9, lineHeight: 11, fontWeight: "900" },
   homeMetricValue: { color: "#f8fafc", fontSize: 12, lineHeight: 15, fontWeight: "900", marginTop: 1, textAlign: "center" },
   homeMetricLabel: { color: "#9bdcaa", fontSize: 8, lineHeight: 10, fontWeight: "900", marginTop: 1, textAlign: "center" },
+  homeCommandGrid: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 1, marginBottom: 6, zIndex: 2 },
+  homeCommandButton: { flexGrow: 1, flexBasis: "31%", minHeight: 38, flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 8, backgroundColor: "rgba(15,23,42,0.88)", borderColor: "rgba(125,211,252,0.18)", borderWidth: 1, paddingHorizontal: 5, paddingVertical: 5 },
+  homeCommandButtonAlert: { backgroundColor: "rgba(63,45,18,0.92)", borderColor: "rgba(251,191,36,0.48)" },
+  homeCommandIcon: { width: 18, height: 18, borderRadius: 6, overflow: "hidden", backgroundColor: "rgba(125,211,252,0.18)", color: "#7dd3fc", fontSize: 9, lineHeight: 18, fontWeight: "900", textAlign: "center" },
+  homeCommandTextBlock: { flex: 1, minWidth: 0 },
+  homeCommandLabel: { color: "#f8fafc", fontSize: 9, lineHeight: 12, fontWeight: "900" },
+  homeCommandValue: { color: "#9bdcaa", fontSize: 8, lineHeight: 10, fontWeight: "900", marginTop: 1 },
   homeNavGridClean: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 2, marginBottom: 6, zIndex: 2 },
   homeNavButtonClean: { width: "48.8%", minHeight: 38, borderRadius: 8, backgroundColor: "rgba(226,232,240,0.94)", borderColor: "rgba(15,23,42,0.18)", borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 },
   homeNavLabelClean: { color: "#0f172a", fontSize: 11, lineHeight: 14, fontWeight: "900", textAlign: "center" },
