@@ -3676,16 +3676,14 @@ function PlayerRow({ career, player, tr, selected, selectedClubId, setSelectedPl
   return (
     <View style={[styles.listCard, styles.playerListCard, selected && styles.selected]}>
       {selected ? (
-        <View style={styles.playerCardHeader}>
-          <PlayerPortrait player={player} size={68} />
-          <View style={styles.listMain}>
-            <Text style={styles.cardTitle}>{player.name}</Text>
-            <Text style={styles.muted}>{player.age} • {tr("overall")} {player.overall} • Pot {playerPotentialLabel(player)}</Text>
-            <Text style={styles.valueText}>{formatMoney(player.value)} · Form {player.form} · Mutluluk {player.happiness ?? player.morale}</Text>
-            <Text style={styles.statsText}>Sezon: {player.seasonStats?.played || 0} maç · {player.seasonStats?.goals || 0} gol · {player.seasonStats?.shots || 0} şut</Text>
-            {player.represented && <Text style={styles.contractText}>Güven {player.agencyTrust ?? 55} · Komisyon %{player.agencyCommissionRate || 8} · Piyasa {player.marketHeat || 0}/100</Text>}
-          </View>
-        </View>
+        <MotiView
+          from={{ opacity: 0, translateY: 8 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: "timing", duration: 240 }}
+          style={styles.playerCardHeader}
+        >
+          {playerDetails}
+        </MotiView>
       ) : (
         <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Oyuncu seç ${player.name}`} style={styles.playerCardHeader} onPress={() => setSelectedPlayerId(player.id)}>
           {playerDetails}
@@ -3704,7 +3702,6 @@ function PlayerRow({ career, player, tr, selected, selectedClubId, setSelectedPl
           updateCareer={updateCareer}
           setDecisionFlash={setDecisionFlash}
         />
-        <Text style={styles.storyText} numberOfLines={2}>{player.story || "Kariyer hikayesi scout raporlarinda netlesecek."}</Text>
         </>
       ) : (
         <View style={styles.playerCollapsedHint}>
