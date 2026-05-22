@@ -2174,6 +2174,13 @@ function buildWeekReport(previousCareer, nextCareer, preview, popupCards = []) {
       : nextPlayers.length
         ? "Oyuncunu yönet: konuşma, bakım veya PR haftasıyla teklif ihtimalini büyüt."
         : "Scout ekranına gir ve ilk düşük komisyonlu oyuncuyu ikna et.";
+  const focusImpact = buildWeeklyFocusImpact(previousCareer, nextCareer, {
+    discovered,
+    newOffers,
+    reputationDelta: nextCareer.reputation - previousCareer.reputation,
+    playerChanges,
+    cardCount: popupCards.length
+  });
   return {
     week: nextCareer.week,
     month: nextCareer.seasonMonth,
@@ -2185,6 +2192,7 @@ function buildWeekReport(previousCareer, nextCareer, preview, popupCards = []) {
     discovered,
     cards: popupCards.length,
     focus: nextCareer.weeklyFocus || "balanced",
+    focusImpact,
     headline: (nextCareer.news || [])[0] || "Hafta tamamlandı.",
     bestPlayerName: bestPlayer?.player?.name || null,
     bestPlayerValueDelta: bestPlayer?.valueDelta || 0,
@@ -2244,6 +2252,17 @@ function WeekReportModal({ report, onClose }) {
             <ReportDelta label="Portföy" value={formatSignedNumber(report.representedDelta)} good={report.representedDelta >= 0} />
             <ReportDelta label="Teklif" value={`+${report.newOffers}`} good={report.newOffers > 0} />
           </View>
+
+          {report.focusImpact && (
+            <View style={styles.weekReportFocusImpact}>
+              <View style={styles.weekReportFocusTop}>
+                <Text style={styles.weekReportFocusKicker}>Strateji etkisi</Text>
+                <Text style={styles.weekReportFocusBadge}>{report.focusImpact.cost}</Text>
+              </View>
+              <Text style={styles.weekReportFocusTitle} numberOfLines={1}>{report.focusImpact.title}</Text>
+              <Text style={styles.weekReportFocusText} numberOfLines={2}>{report.focusImpact.summary}</Text>
+            </View>
+          )}
 
           <View style={styles.weekReportNotes}>
             {compactNotes.map((note, index) => (
@@ -2350,6 +2369,54 @@ function weeklyFocusLabel(focus = "balanced") {
     care: "Bakım"
   };
   return labels[focus] || "Denge";
+}
+
+function buildWeeklyFocusImpact(previousCareer, nextCareer, stats = {}) {
+  const focus = previousCareer?.weeklyFocus || "balanced";
+  const label = weeklyFocusLabel(focus);
+  const costs = { balanced: 0, scout: 12000, negotiation: 15000, pr: 18000, care: 10000 };
+  const locked = (costs[focus] || 0) > Math.max(0, previousCareer?.money || 0);
+  const avg = (items, field) => {
+    if (!items?.length) return 0;
+    return Math.round(items.reduce((sum, item) => sum + (item[field] || 0), 0) / items.length);
+  };
+  const marketGain = avg(stats.playerChanges, "marketHeatDelta");
+  const trustGain = avg(stats.playerChanges, "trustDelta");
+  const formGain = avg(stats.playerChanges, "formDelta");
+  const lines = {
+    balanced: {
+      title: "Denge haftası",
+      summary: `Risk almadın. Form ${formatSignedNumber(formGain)}, güven ${formatSignedNumber(trustGain)}; kasa baskısı düşük kaldı.`
+    },
+    scout: {
+      title: "Scout ağı zorlandı",
+      summary: `${stats.discovered || 0} yeni dosya ve ${stats.cardCount || 0} kart baskısı. Scout haftaları daha çok yetenek ve turnuva fırsatı doğurur.`
+    },
+    negotiation: {
+      title: "Kulüp telefonları ısındı",
+      summary: `${stats.newOffers || 0} yeni teklif. Pazarlık haftası kulüp ilgisini artırır ama sonuç için oyuncu vitrini de gerekir.`
+    },
+    pr: {
+      title: "Medya görünürlüğü arttı",
+      summary: `Saygınlık ${formatSignedNumber(stats.reputationDelta || 0)}, piyasa ${formatSignedNumber(marketGain)}. PR haftası sponsor ve medya kartlarını öne iter.`
+    },
+    care: {
+      title: "Oyuncu tarafı sakinleşti",
+      summary: `Güven ${formatSignedNumber(trustGain)}, form ${formatSignedNumber(formGain)}. Bakım haftası oyuncu moralini ve bağlılığını güçlendirir.`
+    }
+  };
+  if (locked) {
+    return {
+      title: `${label} iptal edildi`,
+      summary: "Kasa yetmediği için plan dengeli haftaya döndü. Büyük plan için önce gelir üretmen gerekiyor.",
+      cost: "€0"
+    };
+  }
+  return {
+    title: lines[focus]?.title || `${label} haftası`,
+    summary: lines[focus]?.summary || "Hafta stratejisi ajans akışına işlendi.",
+    cost: (costs[focus] || 0) ? `-${formatMoney(costs[focus])}` : "€0"
+  };
 }
 
 function objectiveTitle(objective = {}) {
@@ -6096,6 +6163,12 @@ const styles = StyleSheet.create({
   weekReportMetricLabel: { color: "#94a3b8", fontSize: 8, lineHeight: 10, fontWeight: "900", marginTop: 1 },
   weekReportGood: { color: "#86efac" },
   weekReportBad: { color: "#fca5a5" },
+  weekReportFocusImpact: { backgroundColor: "rgba(63,45,18,0.48)", borderColor: "rgba(251,191,36,0.32)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, marginTop: 7 },
+  weekReportFocusTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  weekReportFocusKicker: { color: "#fbbf24", fontSize: 9, lineHeight: 12, fontWeight: "900" },
+  weekReportFocusBadge: { color: "#111827", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 9, lineHeight: 11, fontWeight: "900" },
+  weekReportFocusTitle: { color: "#f8fafc", fontSize: 11, lineHeight: 14, fontWeight: "900", marginTop: 3 },
+  weekReportFocusText: { color: "#fde68a", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 2 },
   weekReportNotes: { backgroundColor: "#0f172a", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, gap: 2, marginTop: 7, marginBottom: 6 },
   weekReportNote: { color: "#dbeafe", fontSize: 9, lineHeight: 12, fontWeight: "800" },
   weekReportSection: { backgroundColor: "rgba(15,23,42,0.78)", borderRadius: 8, borderWidth: 1, borderColor: "rgba(148,163,184,0.15)", padding: 7, gap: 4, marginBottom: 6 },
