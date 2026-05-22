@@ -3071,6 +3071,7 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         : leadPlanDone
           ? { title: "Plan hazır", copy: `${leadClient.name} için haftalık plan seçildi. Şimdi maç haftasına geç ve sonuçları gör.`, target: "nextWeek", cta: "Haftayı Oynat" }
           : { title: "Oyuncunu vitrine çıkar", copy: "İlk haftalarda büyük teklif bekleme. Form, güven ve medya görünürlüğü teklif ihtimalini artırır.", target: "players", cta: "Portföyü Yönet" };
+  const missionSignals = buildMissionSignals({ mission, career, pendingCards, representedCount, agencyCapacity, talents, leadClient, leadPlanDone, activeFocus });
   const commandActions = [
     { label: "Portföy", value: `${representedCount}/${agencyCapacity}`, icon: "P", target: "players" },
     { label: "Scout", value: `${talents}`, icon: "S", target: "scout" },
@@ -3118,6 +3119,13 @@ function HomeCommandCenter({ career, tr, myPlayers, onNextWeek, updateCareer, se
         </View>
         <Text style={styles.homeMissionTitle} numberOfLines={1}>{mission.title}</Text>
         <Text style={styles.homeMissionCopy} numberOfLines={2}>{mission.copy}</Text>
+        <View style={styles.homeMissionSignalRow}>
+          {missionSignals.map((signal, index) => (
+            <Text key={`${signal}-${index}`} style={[styles.homeMissionSignal, index === 0 && styles.homeMissionSignalPrimary]} numberOfLines={1}>
+              {signal}
+            </Text>
+          ))}
+        </View>
         <Text style={styles.homeCoachInline} numberOfLines={2}>Koç: {coachNote}</Text>
       </TouchableOpacity>
 
@@ -3319,6 +3327,15 @@ function FirstClientPlan({ career, players = [], onOpenPlayer, updateCareer, set
       </View>
     </View>
   );
+}
+
+function buildMissionSignals({ mission, career, pendingCards = [], representedCount = 0, agencyCapacity = 1, talents = 0, leadClient, leadPlanDone, activeFocus }) {
+  if (mission?.target === "agenda") return ["Zorunlu karar", `${pendingCards.length} kart`, "Hafta kilitli"];
+  if (mission?.target === "offer") return ["Komisyon", "Maaş", "Kulüp ilişkisi"];
+  if (mission?.target === "scout") return [`${talents} uygun aday`, "Düşük komisyon", "İlk sözleşme"];
+  if (mission?.target === "empire") return [formatMoney(career.money), `Rep ${career.reputation}`, "Harcamayı kes"];
+  if (mission?.target === "nextWeek") return [activeFocus?.label || "Denge", leadClient?.name || "Plan hazır", "Maç raporu"];
+  return [`${representedCount}/${agencyCapacity} portföy`, leadPlanDone ? "Plan hazır" : "Plan seç", "Teklif ihtimali"];
 }
 
 function buildHomeStoryContinue(career, myPlayers = [], translate = (key) => key) {
@@ -6514,6 +6531,9 @@ const styles = StyleSheet.create({
   homeMissionCta: { color: "#111827", backgroundColor: "#bbf7d0", borderRadius: 7, overflow: "hidden", paddingHorizontal: 8, paddingVertical: 3, fontSize: 10, fontWeight: "900" },
   homeMissionTitle: { color: "#ffffff", fontSize: 13, lineHeight: 17, fontWeight: "900", marginTop: 3 },
   homeMissionCopy: { color: "#dbeafe", fontSize: 9, lineHeight: 13, fontWeight: "800", marginTop: 2 },
+  homeMissionSignalRow: { flexDirection: "row", gap: 4, marginTop: 6 },
+  homeMissionSignal: { flex: 1, color: "#c7d2fe", backgroundColor: "rgba(15,23,42,0.78)", borderColor: "rgba(125,211,252,0.18)", borderWidth: 1, borderRadius: 7, overflow: "hidden", paddingHorizontal: 5, paddingVertical: 3, fontSize: 8, lineHeight: 10, fontWeight: "900", textAlign: "center" },
+  homeMissionSignalPrimary: { color: "#111827", backgroundColor: "#bbf7d0", borderColor: "rgba(187,247,208,0.54)" },
   homeCoachInline: { color: "#9bdcaa", fontSize: 9, lineHeight: 12, fontWeight: "900", marginTop: 7 },
   clientPlanPanel: { backgroundColor: "rgba(16,24,39,0.92)", borderColor: "rgba(125,211,252,0.30)", borderWidth: 1, borderRadius: 8, padding: 8, marginBottom: 6, zIndex: 2, shadowColor: "#38bdf8", shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
   clientPlanTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
