@@ -1521,6 +1521,40 @@ function PixelStoryCast({ scene = "door", agentName = "Agent" }) {
   );
 }
 
+function CardStoryCast({ source = "player", severity = "normal" }) {
+  const danger = severity === "urgent" || severity === "risk";
+  const rightRole = source === "media" ? "PRESS" : source === "club" ? "CLUB" : source === "sponsor" ? "SPON" : source === "finance" ? "€" : "AGT";
+  return (
+    <View pointerEvents="none" style={styles.cardCastLayer}>
+      <MotiView
+        from={{ translateY: 1, opacity: 0.92 }}
+        animate={{ translateY: [1, -2, 1], opacity: [0.92, 1, 0.92] }}
+        transition={{ type: "timing", duration: 980, loop: true }}
+        style={[styles.cardMiniActor, styles.cardMiniAgent]}
+      >
+        <View style={styles.cardMiniHead} />
+        <View style={styles.cardMiniSuit} />
+      </MotiView>
+      <MotiView
+        from={{ translateX: 0, scale: 1 }}
+        animate={{ translateX: danger ? [0, -2, 2, 0] : [0, 2, 0], scale: [1, 1.03, 1] }}
+        transition={{ type: "timing", duration: danger ? 520 : 1180, loop: true }}
+        style={[styles.cardMiniActor, styles.cardMiniCounter, danger && styles.cardMiniCounterDanger]}
+      >
+        <View style={[styles.cardMiniHead, styles.cardMiniCounterHead]} />
+        <View style={styles.cardMiniDesk} />
+        <Text style={styles.cardMiniTag}>{rightRole}</Text>
+      </MotiView>
+      <MotiView
+        from={{ opacity: 0.45, translateY: 0 }}
+        animate={{ opacity: [0.45, 1, 0.45], translateY: [0, -5, 0] }}
+        transition={{ type: "timing", duration: 720, loop: true }}
+        style={[styles.cardMiniSignal, danger && styles.cardMiniSignalDanger]}
+      />
+    </View>
+  );
+}
+
 function SetupCareer({ career, tr, onComplete }) {
   const [step, setStep] = useState(career.prologueStep || 0);
   const [prologueChoice, setPrologueChoice] = useState(null);
@@ -4775,6 +4809,7 @@ function CardPopup({ card, career, tr, remaining, onDecision, onAgenda }) {
           >
             <ImageBackground source={artwork} style={styles.cardArtworkBanner} imageStyle={styles.cardArtworkImage}>
               <View style={styles.cardArtworkShade} />
+              <CardStoryCast source={card.source} severity={card.severity} />
               <MotiView
                 from={{ opacity: 0.72, translateX: -4 }}
                 animate={{ opacity: 1, translateX: 5 }}
@@ -6906,6 +6941,18 @@ const styles = StyleSheet.create({
   cardArtworkImage: { borderRadius: 8, resizeMode: "contain" },
   cardArtworkShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(2,6,23,0.22)" },
   cardArtworkDrift: { position: "absolute", left: -36, top: 0, bottom: 0, width: 78, backgroundColor: "rgba(255,255,255,0.08)", transform: [{ skewX: "-18deg" }] },
+  cardCastLayer: { ...StyleSheet.absoluteFillObject, zIndex: 2 },
+  cardMiniActor: { position: "absolute", bottom: 8, alignItems: "center" },
+  cardMiniAgent: { left: 26, width: 28, height: 52 },
+  cardMiniCounter: { right: 30, width: 34, height: 58 },
+  cardMiniCounterDanger: { right: 24 },
+  cardMiniHead: { width: 16, height: 17, borderRadius: 5, backgroundColor: "#d6a16f", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },
+  cardMiniCounterHead: { backgroundColor: "#c9895c" },
+  cardMiniSuit: { marginTop: -1, width: 24, height: 27, borderRadius: 5, backgroundColor: "#0f172a", borderWidth: 1, borderColor: "rgba(125,211,252,0.28)" },
+  cardMiniDesk: { marginTop: 2, width: 32, height: 22, borderRadius: 5, backgroundColor: "rgba(251,191,36,0.90)", borderWidth: 1, borderColor: "rgba(254,243,199,0.55)" },
+  cardMiniTag: { marginTop: 2, color: "#111827", backgroundColor: "#fbbf24", borderRadius: 5, overflow: "hidden", paddingHorizontal: 4, paddingVertical: 1, fontSize: 7, lineHeight: 9, fontWeight: "900" },
+  cardMiniSignal: { position: "absolute", right: 78, top: 18, width: 10, height: 10, borderRadius: 10, backgroundColor: "#7dd3fc", shadowColor: "#7dd3fc", shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
+  cardMiniSignalDanger: { backgroundColor: "#f97316", shadowColor: "#f97316" },
   cardArtworkLabel: { alignSelf: "flex-start", margin: 8, color: "#111827", backgroundColor: "#fbbf24", borderRadius: 7, overflow: "hidden", paddingHorizontal: 8, paddingVertical: 3, fontSize: 10, fontWeight: "900" },
   cardStoryCaption: { paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "rgba(251,191,36,0.16)", backgroundColor: "rgba(8,17,29,0.94)" },
   cardStoryKicker: { color: "#fbbf24", fontSize: 10, lineHeight: 13, fontWeight: "900" },
