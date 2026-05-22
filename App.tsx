@@ -4884,6 +4884,19 @@ function effectPillItems(effect = {}) {
   return items.length ? items : [{ label: "Net etki yok", tone: "neutral" }];
 }
 
+function negotiationPressureRead({ playerComfort = 50, clubPatience = 50, agencyHeat = 50, projectedChance = 50 }) {
+  if (projectedChance >= 70 && playerComfort >= 58 && clubPatience >= 45) {
+    return { label: "Temiz masa", tone: "good", copy: "Oyuncu şartları kabul edilebilir buluyor; kulüp de masadan kalkmaya yakın değil." };
+  }
+  if (agencyHeat >= 72 || clubPatience <= 28) {
+    return { label: "Kopma riski", tone: "danger", copy: "Komisyon ve bonus baskısı kulübü zorluyor. Sert hamle parayı büyütür ama masayı devirebilir." };
+  }
+  if (playerComfort <= 38) {
+    return { label: "Oyuncu soğuk", tone: "danger", copy: "Oyuncu tarafı maaş veya imza parasını zayıf görüyor. Güven düşmeden şartları yumuşat." };
+  }
+  return { label: "Gri alan", tone: "neutral", copy: "Anlaşma mümkün ama iki taraf da tam rahat değil. Taktik seçimi sonucu belirler." };
+}
+
 function Negotiation({ career, tr, offer, player, club, updateCareer, setOffer, setScreen, setDecisionFlash }) {
   const [terms, setTerms] = useState({
     wage: offer.wage,
@@ -4904,6 +4917,10 @@ function Negotiation({ career, tr, offer, player, club, updateCareer, setOffer, 
   const projectedBaseChance = Math.max(3, Math.min(95, Math.round(offer.chance - engineGreed - releaseRisk + wageComfort)));
   const projectedChance = projectedBaseChance;
   const aiAdvice = offer.aiAdvice || { leverage: projectedChance, tactic: "balanced", note: "Dengeli ilerle: veriler yeterli." };
+  const playerComfort = Math.max(0, Math.min(100, 52 + wageComfort + (terms.signingBonus || 0) / 15000 - Math.max(0, (player?.ego || 50) - 60) / 2));
+  const clubPatience = Math.max(0, Math.min(100, 78 - greedRisk * 4 - releaseRisk - Math.max(0, (club?.negotiationHardness || 55) - 55) / 2));
+  const agencyHeat = Math.max(0, Math.min(100, 32 + greedRisk * 7 + (terms.bonuses || 0) / 12000));
+  const negotiationRead = negotiationPressureRead({ playerComfort, clubPatience, agencyHeat, projectedChance });
 
   function changeTerm(key, delta, min = 0, max = Infinity) {
     setTerms((current) => ({ ...current, [key]: Math.max(min, Math.min(max, current[key] + delta)) }));
@@ -4953,6 +4970,26 @@ function Negotiation({ career, tr, offer, player, club, updateCareer, setOffer, 
         <View style={styles.dealChanceBand}>
           <Text style={styles.dealChanceText}>Tahmini kapanış</Text>
           <Text style={styles.dealChanceValue}>{projectedChance}%</Text>
+        </View>
+        <View style={styles.negotiationPressurePanel}>
+          <View style={styles.negotiationPressureTop}>
+            <Text style={styles.negotiationPressureTitle}>Masadaki baskı</Text>
+            <Text style={[styles.negotiationPressureBadge, negotiationRead.tone === "danger" && styles.negotiationPressureBadgeDanger, negotiationRead.tone === "good" && styles.negotiationPressureBadgeGood]}>{negotiationRead.label}</Text>
+          </View>
+          {[
+            { label: "Oyuncu konforu", value: playerComfort, tone: "player" },
+            { label: "Kulüp sabrı", value: clubPatience, tone: "club" },
+            { label: "Ajans iştahı", value: agencyHeat, tone: "agency" }
+          ].map((item) => (
+            <View key={item.label} style={styles.negotiationPressureRow}>
+              <Text style={styles.negotiationPressureLabel}>{item.label}</Text>
+              <View style={styles.negotiationPressureTrack}>
+                <View style={[styles.negotiationPressureFill, styles[`negotiationPressure_${item.tone}`], { width: `${Math.round(item.value)}%` }]} />
+              </View>
+              <Text style={styles.negotiationPressureValue}>{Math.round(item.value)}</Text>
+            </View>
+          ))}
+          <Text style={styles.negotiationPressureCopy} numberOfLines={2}>{negotiationRead.copy}</Text>
         </View>
         <View style={styles.dealPayoutStrip}>
           <View style={styles.dealPayoutCell}>
@@ -7148,6 +7185,21 @@ const styles = StyleSheet.create({
   dealChanceBand: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#0d2a1d", borderColor: "rgba(134,239,172,0.24)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 8 },
   dealChanceText: { color: "#bbf7d0", fontSize: 11, fontWeight: "900" },
   dealChanceValue: { color: "#fbbf24", fontSize: 18, fontWeight: "900" },
+  negotiationPressurePanel: { backgroundColor: "rgba(15,23,42,0.88)", borderColor: "rgba(125,211,252,0.18)", borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 7, marginBottom: 8 },
+  negotiationPressureTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 5 },
+  negotiationPressureTitle: { color: "#e0f2fe", fontSize: 10, lineHeight: 13, fontWeight: "900" },
+  negotiationPressureBadge: { color: "#dbeafe", backgroundColor: "#334155", borderRadius: 7, overflow: "hidden", paddingHorizontal: 7, paddingVertical: 2, fontSize: 8, lineHeight: 10, fontWeight: "900" },
+  negotiationPressureBadgeDanger: { color: "#fff7ed", backgroundColor: "#9a3412" },
+  negotiationPressureBadgeGood: { color: "#052e16", backgroundColor: "#86efac" },
+  negotiationPressureRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
+  negotiationPressureLabel: { width: 82, color: "#cbd5e1", fontSize: 8, lineHeight: 10, fontWeight: "900" },
+  negotiationPressureTrack: { flex: 1, height: 6, borderRadius: 8, overflow: "hidden", backgroundColor: "#07111f" },
+  negotiationPressureFill: { height: "100%", borderRadius: 8 },
+  negotiationPressure_player: { backgroundColor: "#38bdf8" },
+  negotiationPressure_club: { backgroundColor: "#86efac" },
+  negotiationPressure_agency: { backgroundColor: "#fbbf24" },
+  negotiationPressureValue: { width: 24, color: "#f8fafc", fontSize: 8, lineHeight: 10, fontWeight: "900", textAlign: "right" },
+  negotiationPressureCopy: { color: "#bae6fd", fontSize: 9, lineHeight: 12, fontWeight: "800", marginTop: 6 },
   dealPayoutStrip: { flexDirection: "row", gap: 7, marginBottom: 8 },
   dealPayoutCell: { flex: 1, minHeight: 52, borderRadius: 8, backgroundColor: "#172033", borderColor: "rgba(251,191,36,0.18)", borderWidth: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 5 },
   dealPayoutLabel: { color: "#94a3b8", fontSize: 9, fontWeight: "900", textAlign: "center" },
